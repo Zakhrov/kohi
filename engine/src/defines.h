@@ -1,5 +1,5 @@
 #pragma once
-
+#include <assert.h>
 // Unsigned int types.
 typedef unsigned char u8;
 typedef unsigned short u16;

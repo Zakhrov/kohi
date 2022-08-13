@@ -6,7 +6,10 @@ typedef struct PlatformState
 {
     void* internalState;
 }PlatformState;
-
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 b8 platform_startup(
     PlatformState* platformState,
@@ -35,3 +38,9 @@ f64 platform_get_absolute_time();
 // Should only be used for giving time back to the OS for unused update power.
 // Therefore it is not exported.
 void platform_sleep(u64 ms); 
+
+
+#ifdef __cplusplus
+}
+#endif
+

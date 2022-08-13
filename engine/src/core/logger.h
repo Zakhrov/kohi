@@ -23,7 +23,10 @@ typedef enum LogLevel {
     LOG_LEVEL_TRACE = 5
 }LogLevel;
 
-
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 b8 initialize_logging();
 void shutdown_logging();
 
@@ -68,3 +71,7 @@ KAPI void log_output(LogLevel level, const char* message, ...);
 // Does nothing when LOG_TRACE_ENABLED != 1
 #define KTRACE(message, ...)
 #endif 
+
+#ifdef __cplusplus
+}
+#endif

@@ -2,6 +2,11 @@
 
 #include "../defines.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 // Disable assertions by commenting out the below line.
 #define KASSERTIONS_ENABLED
 
@@ -51,3 +56,8 @@ KAPI void report_assertion_failure(const char* expression, const char* message, 
 #define KASSERT_MSG(expr, message)  // Does nothing at all
 #define KASSERT_DEBUG(expr)         // Does nothing at all
 #endif 
+
+#ifdef __cplusplus
+}
+#endif
+
