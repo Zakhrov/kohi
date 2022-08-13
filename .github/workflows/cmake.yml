@@ -21,7 +21,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Install dependences
-      run: sudo apt-get -y -qq update && sudo apt-get -y -qq install libvulkan-devel libvulkan-dev vulkan-validationlayers-dev spirv-tools libx11-xcb-dev
+      run: sudo apt-get -y -qq update && sudo apt-get -y -qq install libvulkan-dev vulkan-validationlayers-dev spirv-tools libx11-xcb-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
