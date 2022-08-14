@@ -15,6 +15,10 @@
 #include <X11/Xlib-xcb.h>  // sudo apt-get install libxkbcommon-x11-dev
 #include <sys/time.h>
 #include <vector>
+// for surface creation
+#define VK_USE_PLATFORM_XCB_KHR
+#include <vulkan/vulkan.h>
+#include "../renderer/vulkan_backend/vulkan_types.inl"
 
 #if _POSIX_C_SOURCE >= 199309L
 #include <time.h>  // nanosleep
@@ -26,14 +30,15 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef struct internalState {
+typedef struct InternalState {
     Display* display;
     xcb_connection_t* connection;
     xcb_window_t window;
     xcb_screen_t* screen;
     xcb_atom_t wm_protocols;
     xcb_atom_t wm_delete_win;
-} internalState;
+    VkSurfaceKHR surface;
+} InternalState;
 
 Keys translate_keycode(u32 x_keycode);
 
@@ -46,8 +51,8 @@ b8 platform_startup(
     i32 width,
     i32 height) {
     // Create the internal state.
-    platformState->internalState = malloc(sizeof(internalState));
-    internalState* state = (internalState*)platformState->internalState;
+    platformState->internalState = malloc(sizeof(InternalState));
+    InternalState* state = (InternalState*)platformState->internalState;
 
     // Connect to X
     state->display = XOpenDisplay(NULL);
@@ -168,7 +173,7 @@ b8 platform_startup(
 
 void platform_shutdown(PlatformState* platformState) {
     // Simply cold-cast to the known type.
-    internalState* state = (internalState*)platformState->internalState;
+    InternalState* state = (InternalState*)platformState->internalState;
 
     // Turn key repeats back on since this is global for the OS... just... wow.
     // XAutoRepeatOn(state->display);
@@ -178,7 +183,7 @@ void platform_shutdown(PlatformState* platformState) {
 
 b8 platform_pump_messages(PlatformState* platformState) {
     // Simply cold-cast to the known type.
-    internalState* state = (internalState*)platformState->internalState;
+    InternalState* state = (InternalState*)platformState->internalState;
 
     xcb_generic_event_t* event;
     xcb_client_message_event_t* cm;
@@ -310,6 +315,36 @@ void platform_sleep(u64 ms) {
     }
     usleep((ms % 1000) * 1000);
 #endif
+}
+
+void platform_get_required_extension_names(std::vector<const char*>* extensions){
+    extensions->emplace_back("VK_KHR_xcb_surface");
+
+
+}
+b8 platform_create_vulkan_surface(PlatformState* platformState,VulkanContext* context){
+
+    InternalState *state = (InternalState *)platformState->internalState;
+
+    VkXcbSurfaceCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+    createInfo.connection = state->connection;
+    createInfo.window = state->window;
+
+    VkResult result = vkCreateXcbSurfaceKHR(
+        context->instance,
+        &createInfo,
+        context->allocator,
+        &state->surface);
+    if (result != VK_SUCCESS) {
+        KFATAL("Vulkan surface creation failed.");
+        return FALSE;
+    }
+
+    context->surface = state->surface;
+    return TRUE;
+
+
 }
 
 Keys translate_keycode(u32 x_keycode) {
@@ -579,10 +614,6 @@ Keys translate_keycode(u32 x_keycode) {
     }
 }
 
-void platform_get_required_extension_names(std::vector<const char*>* extensions){
-    extensions->emplace_back("VK_KHR_xcb_surface");
 
-
-}
 
 #endif 

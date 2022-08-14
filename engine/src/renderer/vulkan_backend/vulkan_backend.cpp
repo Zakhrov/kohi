@@ -3,6 +3,7 @@
 #include "../../core/logger.h"
 #include "../../containers/darray.h"
 #include "vulkan_platform.h"
+#include "vulkan_device.h"
 #include <string.h>
 
 static VulkanContext context{};
@@ -89,6 +90,19 @@ b8 vulkan_renderer_backend_initialize(RendererBackend* backend, const char* appl
     KDEBUG("Vulkan debugger created.");
 #endif
 
+    
+    KDEBUG("Creating Vulkan surface...");
+    if (!platform_create_vulkan_surface(platformState, &context)) {
+        KERROR("Failed to create platform surface!");
+        return FALSE;
+    }
+    KDEBUG("Vulkan surface created.");
+
+    if(!vulkan_device_create(&context)){
+        KERROR("Failed to create Vulkan device");
+        return FALSE;
+    }
+
     KINFO("Vulkan backend initialized successfully");
     return TRUE;
     
@@ -105,6 +119,11 @@ void vulkan_renderer_backend_shutdown(RendererBackend* backend){
         func(context.instance, context.debugMessenger, context.allocator);
     }
 #endif
+
+    KINFO("Destroying Vulkan surface");
+    vkDestroySurfaceKHR(context.instance,context.surface,context.allocator);
+
+    vulkan_device_destory(&context);
 
     KINFO("Destroying Vulkan instance...");
     vkDestroyInstance(context.instance, context.allocator);
