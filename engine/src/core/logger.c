@@ -1,5 +1,5 @@
 #include "logger.h"
-#include "asserts.h"
+#include "../kohi_asserts.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>

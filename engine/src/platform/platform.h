@@ -6,7 +6,10 @@ typedef struct PlatformState
 {
     void* internalState;
 }PlatformState;
+
 #ifdef __cplusplus
+
+#include "../renderer/vulkan_backend/vulkan_platform.h"
 extern "C"
 {
 #endif

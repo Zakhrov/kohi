@@ -2,6 +2,8 @@
 
 #include "../defines.h"
 #include "logger.h"
+#include "event.h"
+#include "input.h"
 
 struct Game;
 typedef struct ApplicationConfig{
