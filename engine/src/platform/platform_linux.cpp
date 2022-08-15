@@ -326,8 +326,8 @@ b8 platform_create_vulkan_surface(PlatformState* platformState,VulkanContext* co
 
     InternalState *state = (InternalState *)platformState->internalState;
 
-    VkXcbSurfaceCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+    VkXcbSurfaceCreateInfoKHR createInfo{VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR};
+    
     createInfo.connection = state->connection;
     createInfo.window = state->window;
 

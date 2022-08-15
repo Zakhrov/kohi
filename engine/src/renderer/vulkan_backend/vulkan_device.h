@@ -7,3 +7,5 @@ void vulkan_device_query_swapchain_support(
     VkPhysicalDevice physicalDevice,
     VkSurfaceKHR surface,
     VulkanSwapChainSupportInfo* swapchainSupportInfo); 
+
+b8 vulkan_device_detect_depth_format(VulkanDevice* device,int deviceIndex);

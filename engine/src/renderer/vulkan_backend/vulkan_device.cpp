@@ -23,7 +23,7 @@ typedef struct VulkanPhysicalDeviceQueueFamilyInfo
 } VulkanPhysicalDeviceQueueFamilyInfo;
 
 b8 physical_device_meets_requirements(VkPhysicalDevice device, VkSurfaceKHR surface, const VkPhysicalDeviceProperties *properties, const VkPhysicalDeviceFeatures *features,
-                                      const VulkanPhysicalDeviceRequirements *requirements, VulkanPhysicalDeviceQueueFamilyInfo *queueFamilyInfo, VulkanSwapChainSupportInfo *swapchainSupportInfo);
+                                      const VulkanPhysicalDeviceRequirements *requirements, VulkanPhysicalDeviceQueueFamilyInfo *queueFamilyInfo, VulkanSwapChainSupportInfo *swapchainSupportInfo,int deviceIndex);
 
 b8 vulkan_create_physical_device_array(VulkanContext *context);
 
@@ -39,8 +39,10 @@ b8 vulkan_device_create(VulkanContext *context)
     context->device.graphicsQueues = std::vector<VkQueue>(context->device.deviceCount);
     context->device.presentQueues = std::vector<VkQueue>(context->device.deviceCount);
     context->device.transferQueues = std::vector<VkQueue>(context->device.deviceCount);
+    context->device.graphicsCommandPools = std::vector<VkCommandPool>(context->device.deviceCount);
     for (int deviceIndex = 0; deviceIndex < context->device.deviceCount; deviceIndex++)
     {
+
         
         b8 presentSharesGraphicsQueue = context->device.graphicsQueueIndex[deviceIndex] == context->device.presentQueueIndex[deviceIndex];
         b8 transferSharesGraphicsQueue = context->device.graphicsQueueIndex[deviceIndex] == context->device.transferQueueIndex[deviceIndex];
@@ -84,6 +86,7 @@ b8 vulkan_device_create(VulkanContext *context)
             queue_create_infos[i].pNext = 0;
             f32 queue_priority = 1.0f;
             queue_create_infos[i].pQueuePriorities = &queue_priority;
+           
         }
 
         // Request device features.
@@ -91,8 +94,8 @@ b8 vulkan_device_create(VulkanContext *context)
         VkPhysicalDeviceFeatures device_features{};
         device_features.samplerAnisotropy = VK_TRUE; // Request anistrophy
 
-        VkDeviceCreateInfo deviceCreateInfo{};
-        deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        VkDeviceCreateInfo deviceCreateInfo{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
+        
         deviceCreateInfo.queueCreateInfoCount = indexCount;
         deviceCreateInfo.pQueueCreateInfos = queue_create_infos;
         deviceCreateInfo.pEnabledFeatures = &device_features;
@@ -107,6 +110,7 @@ b8 vulkan_device_create(VulkanContext *context)
          
 
         KINFO("Logical device created for %s",context->device.properties[deviceIndex].deviceName);
+       
 
         // Get queues.
         vkGetDeviceQueue(
@@ -127,6 +131,17 @@ b8 vulkan_device_create(VulkanContext *context)
             0,
             &context->device.transferQueues[deviceIndex]);
         KINFO("Queues obtained.");
+        KINFO("Graphics Queue Index %i",context->device.graphicsQueueIndex[deviceIndex]);
+        KINFO("Transfer Queue Index %i",context->device.transferQueueIndex[deviceIndex]);
+        KINFO("Present Queue Index %i",context->device.presentQueueIndex[deviceIndex]);
+
+        VkCommandPoolCreateInfo commandPoolCreateInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+        commandPoolCreateInfo.queueFamilyIndex = context->device.graphicsQueueIndex[deviceIndex];
+        commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        VK_CHECK(vkCreateCommandPool(context->device.logicalDevices[deviceIndex],&commandPoolCreateInfo,context->allocator,&context->device.graphicsCommandPools[deviceIndex]));
+        KINFO("Graphics command pool created for %s",context->device.properties[deviceIndex].deviceName);
+
+
     }
 
     return TRUE;
@@ -134,10 +149,13 @@ b8 vulkan_device_create(VulkanContext *context)
 void vulkan_device_destory(VulkanContext *context)
 {
 
-    KINFO("Destroying logical devices");
-    for (int i = 0; i < context->device.deviceCount; i++)
+    
+    for (int deviceIndex = 0; deviceIndex < context->device.deviceCount; deviceIndex++)
     {
-        vkDestroyDevice(context->device.logicalDevices[i],context->allocator);
+        KINFO("Destroying Graphics Command Pool for %s",context->device.properties[deviceIndex].deviceName)
+        vkDestroyCommandPool(context->device.logicalDevices[deviceIndex],context->device.graphicsCommandPools[deviceIndex],context->allocator);
+        KINFO("Destroying Logical device for %s",context->device.properties[deviceIndex].deviceName);
+        vkDestroyDevice(context->device.logicalDevices[deviceIndex],context->allocator);
     }
     context->device.logicalDevices.clear();
 
@@ -229,6 +247,30 @@ void vulkan_device_query_swapchain_support(
     }
 }
 
+b8 vulkan_device_detect_depth_format(VulkanDevice* device,int deviceIndex){
+    const u64 candidate_count = 3;
+    VkFormat candidates[3] = {
+        VK_FORMAT_D32_SFLOAT,
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+        VK_FORMAT_D24_UNORM_S8_UINT};
+
+    u32 flags = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    for (u64 i = 0; i < candidate_count; ++i) {
+        VkFormatProperties properties;
+        vkGetPhysicalDeviceFormatProperties(device->physicalDevices[deviceIndex], candidates[i], &properties);
+
+        if ((properties.linearTilingFeatures & flags) == flags) {
+            device->depthFormat = candidates[i];
+            return TRUE;
+        } else if ((properties.optimalTilingFeatures & flags) == flags) {
+            device->depthFormat = candidates[i];
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 b8 vulkan_create_physical_device_array(VulkanContext *context)
 {
     u32 deviceCount = 0;
@@ -240,6 +282,9 @@ b8 vulkan_create_physical_device_array(VulkanContext *context)
     }
     context->device.physicalDevices = std::vector<VkPhysicalDevice>(deviceCount);
     context->device.deviceNames = std::vector<const char*>(deviceCount);
+    context->device.presentQueueIndex = std::vector<u32>(deviceCount);
+    context->device.transferQueueIndex = std::vector<u32>(deviceCount);
+    context->device.graphicsQueueIndex = std::vector<u32>(deviceCount);
     
     VK_CHECK(vkEnumeratePhysicalDevices(context->instance, &deviceCount, context->device.physicalDevices.data()));
     for (int i = 0; i < deviceCount; i++)
@@ -272,7 +317,7 @@ b8 vulkan_create_physical_device_array(VulkanContext *context)
             &features,
             &requirements,
             &queueFamilyInfo,
-            &context->device.swapchainSupport);
+            &context->device.swapchainSupport,i);
 
         if (result)
         {
@@ -325,9 +370,10 @@ b8 vulkan_create_physical_device_array(VulkanContext *context)
             }
 
             
-            context->device.graphicsQueueIndex.push_back(queueFamilyInfo.graphicsFamilyIndex);
-            context->device.presentQueueIndex.push_back(queueFamilyInfo.presentFamilyIndex);
-            context->device.transferQueueIndex.push_back(queueFamilyInfo.transferFamilyIndex);
+            context->device.graphicsQueueIndex[i] = queueFamilyInfo.graphicsFamilyIndex;
+            context->device.presentQueueIndex[i] = queueFamilyInfo.presentFamilyIndex;
+            context->device.transferQueueIndex[i] = queueFamilyInfo.transferFamilyIndex;
+          
             // NOTE: set compute index here if needed.
 
             // Keep a copy of properties, features and memory info for later use.
@@ -349,7 +395,7 @@ b8 vulkan_create_physical_device_array(VulkanContext *context)
 }
 
 b8 physical_device_meets_requirements(VkPhysicalDevice device, VkSurfaceKHR surface, const VkPhysicalDeviceProperties *properties, const VkPhysicalDeviceFeatures *features,
-                                      const VulkanPhysicalDeviceRequirements *requirements, VulkanPhysicalDeviceQueueFamilyInfo *queueFamilyInfo, VulkanSwapChainSupportInfo *swapchainSupportInfo)
+                                      const VulkanPhysicalDeviceRequirements *requirements, VulkanPhysicalDeviceQueueFamilyInfo *queueFamilyInfo, VulkanSwapChainSupportInfo *swapchainSupportInfo,int deviceIndex)
 {
 
     queueFamilyInfo->computeFamilyIndex = -1;
@@ -412,10 +458,10 @@ b8 physical_device_meets_requirements(VkPhysicalDevice device, VkSurfaceKHR surf
 
     // Print out some info about the device
     KINFO("       %d |       %d |       %d |        %d | %s",
-          queueFamilyInfo->graphicsFamilyIndex != -1,
-          queueFamilyInfo->presentFamilyIndex != -1,
-          queueFamilyInfo->computeFamilyIndex != -1,
-          queueFamilyInfo->transferFamilyIndex != -1,
+          queueFamilyInfo->graphicsFamilyIndex,
+          queueFamilyInfo->presentFamilyIndex,
+          queueFamilyInfo->computeFamilyIndex,
+          queueFamilyInfo->transferFamilyIndex,
           properties->deviceName);
 
     if (
@@ -429,6 +475,7 @@ b8 physical_device_meets_requirements(VkPhysicalDevice device, VkSurfaceKHR surf
         KTRACE("Present Family Index:  %i", queueFamilyInfo->presentFamilyIndex);
         KTRACE("Transfer Family Index: %i", queueFamilyInfo->transferFamilyIndex);
         KTRACE("Compute Family Index:  %i", queueFamilyInfo->computeFamilyIndex);
+        
 
         vulkan_device_query_swapchain_support(
             device,
