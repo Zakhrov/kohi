@@ -471,10 +471,7 @@ b8 physical_device_meets_requirements(VkPhysicalDevice device, VkSurfaceKHR surf
         (!requirements->transfer || (requirements->transfer && queueFamilyInfo->transferFamilyIndex != -1)))
     {
         KINFO("Device meets queue requirements.");
-        KTRACE("Graphics Family Index: %i", queueFamilyInfo->graphicsFamilyIndex);
-        KTRACE("Present Family Index:  %i", queueFamilyInfo->presentFamilyIndex);
-        KTRACE("Transfer Family Index: %i", queueFamilyInfo->transferFamilyIndex);
-        KTRACE("Compute Family Index:  %i", queueFamilyInfo->computeFamilyIndex);
+        
         
 
         vulkan_device_query_swapchain_support(

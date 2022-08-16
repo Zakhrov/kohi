@@ -24,6 +24,8 @@ KAPI b8 application_create(struct Game* gameInstance);
 
 KAPI b8 application_run();
 
+void application_get_framebuffer_size(u64* width, u64* height);
+
 #ifdef __cplusplus
 }
 #endif

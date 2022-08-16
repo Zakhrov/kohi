@@ -26,6 +26,7 @@ void renderer_shutdown(){
 
 }
 void renderer_on_resized(u16 width, u16 height){
+    backend->resized(backend,width,height);
 
 }
 b8 renderer_begin_frame(f32 deltaTime){
@@ -33,8 +34,9 @@ b8 renderer_begin_frame(f32 deltaTime){
 
 }
 b8 renderer_end_frame(f32 deltaTime){
+    b8 result = backend->end_frame(backend,deltaTime);
     backend->frameNumber++;
-    return backend->end_frame(backend,deltaTime);
+    return result;
 }
 
 b8 renderer_draw_frame(RenderPacket* packet){

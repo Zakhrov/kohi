@@ -22,8 +22,10 @@ typedef struct ApplicationState{
 static b8 initialized = FALSE;
 static ApplicationState applicationState;
 
+
 b8 application_on_event(u16 code, void* sender, void* listener_inst, EventContext context);
 b8 application_on_key(u16 code, void* sender, void* listener_inst, EventContext context);
+b8 application_on_resize(u16 code, void* sender, void* listener_inst, EventContext context);
 
 b8 application_create(Game* gameInstance){
     if(initialized){
@@ -47,6 +49,7 @@ b8 application_create(Game* gameInstance){
     event_register(EVENT_CODE_APPLICATION_QUIT, 0, application_on_event);
     event_register(EVENT_CODE_KEY_PRESSED, 0, application_on_key);
     event_register(EVENT_CODE_KEY_RELEASED, 0, application_on_key);
+    event_register(EVENT_CODE_RESIZED ,0,application_on_resize);
 
     if (!platform_startup(&applicationState.platform,
     gameInstance->applicationConfig.name,
@@ -147,6 +150,13 @@ b8 application_run(){
 
 }
 
+void application_get_framebuffer_size(u64* width, u64* height){
+    *width = applicationState.width;
+    *height = applicationState.height;
+    
+}
+
+
 b8 application_on_event(u16 code, void* sender, void* listener_inst, EventContext context) {
     switch (code) {
         case EVENT_CODE_APPLICATION_QUIT: {
@@ -186,3 +196,30 @@ b8 application_on_key(u16 code, void* sender, void* listener_inst, EventContext 
     }
     return FALSE;
 } 
+
+b8 application_on_resize(u16 code, void* sender, void* listener_inst, EventContext context){
+    if(code == EVENT_CODE_RESIZED){
+        u16 width = context.data.u16[0];
+        u16 height = context.data.u16[1];
+        if(width != applicationState.width || height != applicationState.height){
+            applicationState.width = width;
+            applicationState.height = height;
+            KDEBUG("Window resize %i, %i",width,height);
+            if(width == 0 || height == 0){
+                KINFO("Window minimized suspending application");
+                applicationState.isSuspended = TRUE;
+                return TRUE;
+            }
+            else{
+                if(applicationState.isSuspended){
+                    KINFO("Window restored resuming application");
+                    applicationState.isSuspended = FALSE;
+
+                }
+                applicationState.gameInstance->on_resize(applicationState.gameInstance,width,height);
+                renderer_on_resized(width, height);
+            }
+        }
+    }
+    return FALSE; //  explicitly not handle so other events can fire
+}

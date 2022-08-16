@@ -24,7 +24,7 @@ b8 vulkan_swapchain_acquire_next_image_index(VulkanContext* context, VulkanSwapc
     VkResult result = vkAcquireNextImageKHR(context->device.logicalDevices[deviceIndex],swapchain->handle,timeoutMs,imageAvailableSemaphore,fence,imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         // Trigger swapchain recreation, then boot out of the render loop.
-        vulkan_swapchain_recreate(context, context->framebufferWidth, context->framebufferHeight, swapchain,deviceIndex);
+        vulkan_swapchain_recreate(context, context->framebufferWidth[deviceIndex], context->framebufferHeight[deviceIndex], swapchain,deviceIndex);
         return FALSE;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         KFATAL("Failed to acquire swapchain image!");
@@ -47,10 +47,12 @@ void vulkan_swapchain_present(VulkanContext* context, VulkanSwapchain* swapchain
     VkResult result = vkQueuePresentKHR(presentQueue, &present_info);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         // Swapchain is out of date, suboptimal or a framebuffer resize has occurred. Trigger swapchain recreation.
-        vulkan_swapchain_recreate(context, context->framebufferWidth, context->framebufferHeight, swapchain,deviceIndex);
+        vulkan_swapchain_recreate(context, context->framebufferWidth[deviceIndex], context->framebufferHeight[deviceIndex], swapchain,deviceIndex);
     } else if (result != VK_SUCCESS) {
         KFATAL("Failed to present swap chain image!");
     }
+     // Increment (and loop) the index.
+    context->currentFrame[deviceIndex] = (context->currentFrame[deviceIndex] + 1) % swapchain->maxFramesInFlight;
 }
 
 void create(VulkanContext* context,u32 width,u32 height,VulkanSwapchain* swapchain,int deviceIndex){
@@ -72,13 +74,13 @@ void create(VulkanContext* context,u32 width,u32 height,VulkanSwapchain* swapcha
     }
 
       VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
-    for (u32 i = 0; i < context->device.swapchainSupport.presentModeCount; ++i) {
-        VkPresentModeKHR mode = context->device.swapchainSupport.presentModes[i];
-        if (mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-            presentMode = mode;
-            break;
-        }
-    }
+    // for (u32 i = 0; i < context->device.swapchainSupport.presentModeCount; ++i) {
+    //     VkPresentModeKHR mode = context->device.swapchainSupport.presentModes[i];
+    //     if (mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+    //         presentMode = mode;
+    //         break;
+    //     }
+    // }
 
     // Requery swapchain support.
     vulkan_device_query_swapchain_support(
@@ -131,8 +133,8 @@ void create(VulkanContext* context,u32 width,u32 height,VulkanSwapchain* swapcha
     swapchainCreateInfo.oldSwapchain = 0;
 
     VK_CHECK(vkCreateSwapchainKHR(context->device.logicalDevices[deviceIndex],&swapchainCreateInfo,context->allocator,&swapchain->handle));
-    context->currentFrame = 0;
-    context->imageIndex = 0;
+    context->currentFrame[deviceIndex] = 0;
+    context->imageIndex[deviceIndex] = 0;
     swapchain->imageCount = 0;
     VK_CHECK(vkGetSwapchainImagesKHR(context->device.logicalDevices[deviceIndex],swapchain->handle,&swapchain->imageCount,VK_NULL_HANDLE));
     if(!swapchain->images){
@@ -170,6 +172,7 @@ void create(VulkanContext* context,u32 width,u32 height,VulkanSwapchain* swapcha
 }
 
 void destroy(VulkanContext* context, VulkanSwapchain* swapchain,int deviceIndex){
+    vkDeviceWaitIdle(context->device.logicalDevices[deviceIndex]);
     vulkan_image_destroy(context,&swapchain->depthAttachment,deviceIndex);
 
     // Only destroy the views and not the images

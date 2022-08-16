@@ -3,6 +3,17 @@
 #include "../../core/logger.h"
 void vulkan_renderpass_create(VulkanContext* context, VulkanRenderpass* renderpass, f32 x, f32 y, f32 w, f32 h, f32 r, f32 g, f32 b, f32 a, f32 depth, u32 stencil,int deviceIndex){
 
+    renderpass->a = a;
+    renderpass->b = b;
+    renderpass->depth = depth;
+    renderpass->g = g;
+    renderpass->h = h;
+    renderpass->r = r;
+    renderpass->stencil = stencil;
+    renderpass->w = w;
+    renderpass->x = x;
+    renderpass->y = y;
+
     // Main subpass
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
