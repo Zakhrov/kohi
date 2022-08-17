@@ -5,9 +5,8 @@ add_subdirectory(containers)
 add_subdirectory(platform)
 add_subdirectory(renderer)
 
-# set(SOURCES )
 
 
 
 
-target_link_libraries(${PROJECT_NAME} vulkan X11 xcb X11::XCB VulkanRendererBackend)
+target_link_libraries(${PROJECT_NAME} vulkan X11 xcb X11::XCB KohiRenderer KohiCore KohiPlatform)

@@ -8,17 +8,9 @@
 #include "../core/input.h"
 #include "../core/event.h"
 
-#include <xcb/xcb.h>
-#include <X11/keysym.h>
-#include <X11/XKBlib.h>  // sudo apt-get install libx11-dev
-#include <X11/Xlib.h>
-#include <X11/Xlib-xcb.h>  // sudo apt-get install libxkbcommon-x11-dev
+#include "platform_linux.inl"
 #include <sys/time.h>
-#include <vector>
-// for surface creation
-#define VK_USE_PLATFORM_XCB_KHR
-#include <vulkan/vulkan.h>
-#include "../renderer/vulkan_backend/vulkan_types.inl"
+
 
 #if _POSIX_C_SOURCE >= 199309L
 #include <time.h>  // nanosleep
@@ -30,15 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef struct InternalState {
-    Display* display;
-    xcb_connection_t* connection;
-    xcb_window_t window;
-    xcb_screen_t* screen;
-    xcb_atom_t wm_protocols;
-    xcb_atom_t wm_delete_win;
-    VkSurfaceKHR surface;
-} InternalState;
 
 Keys translate_keycode(u32 x_keycode);
 
@@ -327,35 +310,7 @@ void platform_sleep(u64 ms) {
 #endif
 }
 
-void platform_get_required_extension_names(std::vector<const char*>* extensions){
-    extensions->emplace_back("VK_KHR_xcb_surface");
 
-
-}
-b8 platform_create_vulkan_surface(PlatformState* platformState,VulkanContext* context){
-
-    InternalState *state = (InternalState *)platformState->internalState;
-
-    VkXcbSurfaceCreateInfoKHR createInfo{VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR};
-    
-    createInfo.connection = state->connection;
-    createInfo.window = state->window;
-
-    VkResult result = vkCreateXcbSurfaceKHR(
-        context->instance,
-        &createInfo,
-        context->allocator,
-        &state->surface);
-    if (result != VK_SUCCESS) {
-        KFATAL("Vulkan surface creation failed.");
-        return FALSE;
-    }
-
-    context->surface = state->surface;
-    return TRUE;
-
-
-}
 
 Keys translate_keycode(u32 x_keycode) {
     switch (x_keycode) {

@@ -1,2 +1,5 @@
+project(KohiRenderer)
+add_library(${PROJECT_NAME} SHARED)
 target_sources(${PROJECT_NAME} PRIVATE renderer_backend.c renderer_frontend.c)
 add_subdirectory(vulkan_backend)
+target_link_libraries(${PROJECT_NAME} PUBLIC KohiVulkanBackend)

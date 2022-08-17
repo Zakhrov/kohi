@@ -1,10 +1,13 @@
 #pragma once
-
 #include "../../defines.h"
 #include "../../kohi_asserts.h"
-
 #include <vulkan/vulkan.h>
+
 #include <vector>
+
+
+
+
 
 
 typedef struct VulkanSwapChainSupportInfo{
@@ -17,11 +20,14 @@ typedef struct VulkanSwapChainSupportInfo{
 
 
 typedef struct VulkanDevice{
+    
+    u32 deviceCount;
+    VulkanSwapChainSupportInfo swapchainSupport;
+
+
     std::vector<VkPhysicalDevice> physicalDevices;
     std::vector<VkDevice> logicalDevices;
     std::vector<const char*> deviceNames;
-    u32 deviceCount;
-    VulkanSwapChainSupportInfo swapchainSupport;
     std::vector<u32> graphicsQueueIndex;
     std::vector<u32> presentQueueIndex;
     std::vector<u32> transferQueueIndex;
@@ -32,6 +38,8 @@ typedef struct VulkanDevice{
     std::vector<VkPhysicalDeviceProperties> properties;
     std::vector<VkPhysicalDeviceFeatures> features;
     std::vector<VkPhysicalDeviceMemoryProperties> memory;
+
+  
     VkFormat depthFormat;
 }VulkanDevice;
 
@@ -115,8 +123,12 @@ typedef struct VulkanContext {
     VkAllocationCallbacks* allocator;
     VulkanDevice device;
     VkSurfaceKHR surface;
+
+
     std::vector<u64> framebufferWidth;
     std::vector<u64> framebufferHeight;
+    std::vector<int> currentDeviceIndex;
+    std::vector<int> lastDeviceIndex;
     std::vector<u64> framebufferSizeGeneration;
     std::vector<u64> framebufferSizeLastGeneration;
     std::vector<VulkanSwapchain> swapchains;
@@ -129,6 +141,9 @@ typedef struct VulkanContext {
     std::vector<u32> imageIndex;
     std::vector<u32> currentFrame;
     std::vector<b8> recreatingSwapchain;
+
+
+    VkResult swapchainResult;
     i32(*findMemoryIndex)(u64 memoryTypeBits,VkMemoryPropertyFlags memoryFlags,int deviceIndex);
 #ifndef NDEBUG
   VkDebugUtilsMessengerEXT debugMessenger;
@@ -136,3 +151,5 @@ typedef struct VulkanContext {
 } VulkanContext;
 
 #define VK_CHECK(expr){ KASSERT(expr == VK_SUCCESS);}
+
+

@@ -22,6 +22,7 @@ void vulkan_swapchain_destroy(VulkanContext* context,VulkanSwapchain* swapchain,
 
 b8 vulkan_swapchain_acquire_next_image_index(VulkanContext* context, VulkanSwapchain* swapchain, u64 timeoutMs, VkSemaphore imageAvailableSemaphore,VkFence fence,u32* imageIndex,int deviceIndex){
     VkResult result = vkAcquireNextImageKHR(context->device.logicalDevices[deviceIndex],swapchain->handle,timeoutMs,imageAvailableSemaphore,fence,imageIndex);
+    context->swapchainResult = result;
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         // Trigger swapchain recreation, then boot out of the render loop.
         vulkan_swapchain_recreate(context, context->framebufferWidth[deviceIndex], context->framebufferHeight[deviceIndex], swapchain,deviceIndex);
@@ -45,6 +46,7 @@ void vulkan_swapchain_present(VulkanContext* context, VulkanSwapchain* swapchain
     present_info.pResults = 0;
 
     VkResult result = vkQueuePresentKHR(presentQueue, &present_info);
+    // context->swapchainResult = result;
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         // Swapchain is out of date, suboptimal or a framebuffer resize has occurred. Trigger swapchain recreation.
         vulkan_swapchain_recreate(context, context->framebufferWidth[deviceIndex], context->framebufferHeight[deviceIndex], swapchain,deviceIndex);
