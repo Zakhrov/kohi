@@ -12,7 +12,6 @@
 #include "vulkan_framebuffer.h"
 #include "vulkan_fence.h"
 #include "vulkan_utils.h"
-
 static VulkanContext context{};
 static u64 cachedFramebufferWidth = 0;
 static u64 cachedFramebufferHeight = 0;
@@ -31,6 +30,8 @@ b8 recreate_swapchain(RendererBackend *backend, int deviceIndex);
 
 b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *applicationName, struct PlatformState *platformState)
 {
+
+    glm::vec4 vec4{};
     application_get_framebuffer_size(&cachedFramebufferWidth, &cachedFramebufferHeight);
 
     // TODO: Custom Allocator
