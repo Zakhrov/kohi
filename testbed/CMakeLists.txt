@@ -1,3 +1,5 @@
 project(KohiTestbed)
 include_directories(include)
+include_directories(${CMAKE_SOURCE_DIR}/engine/include)
+add_executable(${PROJECT_NAME})
 add_subdirectory(src)
