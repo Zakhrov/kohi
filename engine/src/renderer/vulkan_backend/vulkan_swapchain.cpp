@@ -75,7 +75,7 @@ void create(VulkanContext* context,u32 width,u32 height,VulkanSwapchain* swapcha
         swapchain->imageFormat = context->device.swapchainSupport.formats[0];
     }
 
-      VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+      VkPresentModeKHR presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     // for (u32 i = 0; i < context->device.swapchainSupport.presentModeCount; ++i) {
     //     VkPresentModeKHR mode = context->device.swapchainSupport.presentModes[i];
     //     if (mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
