@@ -1,6 +1,6 @@
-#include "vulkan_device.h"
-#include "../../core/logger.h"
-#include "../../core/kmemory.h"
+#include "renderer/vulkan_backend/vulkan_device.h"
+#include "core/logger.h"
+#include "core/kmemory.h"
 #include <string.h>
 
 typedef struct VulkanPhysicalDeviceRequirements

@@ -1,10 +1,10 @@
-#include "application.h"
-#include "../platform/platform.h"
+#include "core/application.h"
+#include "platform/platform.h"
 
-#include "../game_types.h"
-#include "kmemory.h"
-#include "clock.h"
-#include "../renderer/renderer_frontend.h"
+#include "game_types.h"
+#include "core/kmemory.h"
+#include "core/clock.h"
+#include "renderer/renderer_frontend.h"
 
 
 typedef struct ApplicationState{

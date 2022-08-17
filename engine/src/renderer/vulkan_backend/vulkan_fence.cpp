@@ -1,5 +1,5 @@
-#include "vulkan_fence.h"
-#include "../../core/logger.h"
+#include "renderer/vulkan_backend/vulkan_fence.h"
+#include "core/logger.h"
 
 
 void vulkan_fence_create(VulkanContext* context, b8 createSignaled, VulkanFence* fence,int deviceIndex){

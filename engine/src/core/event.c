@@ -1,6 +1,6 @@
-#include "event.h"
-#include "kmemory.h"
-#include "../containers/darray.h"
+#include "core/event.h"
+#include "core/kmemory.h"
+#include "containers/darray.h"
 typedef struct RegisteredEvent{
     void* listener;
     PFN_on_event callback;

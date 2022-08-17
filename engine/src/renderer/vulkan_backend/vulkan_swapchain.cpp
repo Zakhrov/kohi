@@ -1,9 +1,9 @@
-#include "vulkan_swapchain.h"
+#include "renderer/vulkan_backend/vulkan_swapchain.h"
 
-#include "../../core/logger.h"
-#include "../../core/kmemory.h"
-#include "vulkan_device.h"
-#include "vulkan_image.h"
+#include "core/logger.h"
+#include "core/kmemory.h"
+#include "renderer/vulkan_backend/vulkan_device.h"
+#include "renderer/vulkan_backend/vulkan_image.h"
 
 void create(VulkanContext* context,u32 width,u32 height,VulkanSwapchain *swapchain,int deviceIndex);
 void destroy(VulkanContext* context, VulkanSwapchain* swapchain,int deviceIndex);

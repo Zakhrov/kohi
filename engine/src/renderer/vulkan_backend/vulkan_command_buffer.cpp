@@ -1,6 +1,6 @@
-#include "vulkan_command_buffer.h"
+#include "renderer/vulkan_backend/vulkan_command_buffer.h"
 
-#include "../../core/kmemory.h"
+#include "core/kmemory.h"
 
 void vulkan_command_buffer_allocate(VulkanContext* context, VkCommandPool pool,b8 isPrimary,VulkanCommandBuffer *commandBuffer,int deviceIndex){
 

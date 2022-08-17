@@ -1,6 +1,6 @@
-#include "vulkan_framebuffer.h"
+#include "renderer/vulkan_backend/vulkan_framebuffer.h"
 
-#include "../../core/kmemory.h"
+#include "core/kmemory.h"
 
 void vulkan_framebuffer_create(VulkanContext* context, VulkanRenderpass* renderpass,u32 width,u32 height,u32 attachmentCount,VkImageView* attachments,VulkanFramebuffer* framebuffer,int deviceIndex){
     framebuffer->attachments = (VkImageView*)kallocate(sizeof(VkImageView)*attachmentCount,MEMORY_TAG_RENDERER);

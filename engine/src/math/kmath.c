@@ -1,5 +1,5 @@
-#include "kmath.h"
-#include "../platform/platform.h"
+#include "math/kmath.h"
+#include "platform/platform.h"
 
 #include <math.h>
 #include <stdlib.h>

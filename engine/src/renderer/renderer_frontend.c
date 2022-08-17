@@ -1,8 +1,8 @@
-#include "renderer_frontend.h"
-#include "renderer_backend.h"
+#include "renderer/renderer_frontend.h"
+#include "renderer/renderer_backend.h"
 
-#include "../core/logger.h"
-#include "../core/kmemory.h"
+#include "core/logger.h"
+#include "core/kmemory.h"
 
 static RendererBackend* backend = 0;
 

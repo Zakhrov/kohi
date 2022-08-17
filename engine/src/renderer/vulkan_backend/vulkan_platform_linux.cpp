@@ -1,12 +1,12 @@
 #define VK_USE_PLATFORM_XCB_KHR
-#include "vulkan_platform.h"
+#include "renderer/vulkan_backend/vulkan_platform.h"
 #include <vulkan/vulkan.h>
 #include <xcb/xcb.h>
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>  // sudo apt-get install libx11-dev
 #include <X11/Xlib.h>
 #include <X11/Xlib-xcb.h>  // sudo apt-get install libxkbcommon-x11-dev
-#include "../../core/logger.h"
+#include "core/logger.h"
 
 void platform_get_required_extension_names(std::vector<const char*>* extensions){
     extensions->emplace_back("VK_KHR_xcb_surface");

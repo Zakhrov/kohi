@@ -1,14 +1,14 @@
-#include "platform.h"
+#include "platform/platform.h"
 
 
 // Linux platform layer.
 #if KPLATFORM_LINUX
 
-#include "../core/logger.h"
-#include "../core/input.h"
-#include "../core/event.h"
+#include "core/logger.h"
+#include "core/input.h"
+#include "core/event.h"
 
-#include "platform_linux.inl"
+#include "platform/platform_linux.inl"
 #include <sys/time.h>
 
 

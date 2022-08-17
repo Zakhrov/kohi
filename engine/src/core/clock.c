@@ -1,6 +1,6 @@
-#include "clock.h"
+#include "core/clock.h"
 
-#include "../platform/platform.h"
+#include "platform/platform.h"
 
 void clock_update(KohiClock* clock){
     if (clock->startTime != 0) {

@@ -1,6 +1,6 @@
-#include "vulkan_image.h"
-#include "vulkan_device.h"
-#include "../../core/logger.h"
+#include "renderer/vulkan_backend/vulkan_image.h"
+#include "renderer/vulkan_backend/vulkan_device.h"
+#include "core/logger.h"
 void vulkan_image_create(
     VulkanContext *context,
     VkImageType imageType,
