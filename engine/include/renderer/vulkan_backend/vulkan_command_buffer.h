@@ -2,7 +2,7 @@
 
 #include "vulkan_types.inl"
 
-void vulkan_command_buffer_allocate(VulkanContext* context, VkCommandPool pool,b8 isPrimary,VulkanCommandBuffer *commandBuffer,int deviceIndex);
+void vulkan_command_buffer_allocate(VulkanContext* context, VkCommandPool pool,b8 isPrimary,VulkanCommandBuffer *commandBuffer,int deviceIndex,int bufferId);
 
 void vulkan_command_buffer_free(VulkanContext* context, VkCommandPool pool,VulkanCommandBuffer *commandBuffer,int deviceIndex);
 
@@ -17,7 +17,7 @@ void vulkan_command_buffer_reset(VulkanCommandBuffer* commandBuffer);
 /**
  * Allocates and begins recording to out_command_buffer.
  */
-void vulkan_command_buffer_allocate_and_begin_single_use(VulkanContext* context, VkCommandPool pool,VulkanCommandBuffer *commandBuffer,int deviceIndex);
+void vulkan_command_buffer_allocate_and_begin_single_use(VulkanContext* context, VkCommandPool pool,VulkanCommandBuffer *commandBuffer,int deviceIndex,int bufferId);
 
 /**
  * Ends recording, submits to and waits for queue operation and frees the provided command buffer.

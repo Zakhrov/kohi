@@ -2,8 +2,8 @@
 
 #include "core/kmemory.h"
 
-void vulkan_framebuffer_create(VulkanContext* context, VulkanRenderpass* renderpass,u32 width,u32 height,u32 attachmentCount,VkImageView* attachments,VulkanFramebuffer* framebuffer,int deviceIndex){
-    framebuffer->attachments = (VkImageView*)kallocate(sizeof(VkImageView)*attachmentCount,MEMORY_TAG_RENDERER);
+void vulkan_framebuffer_create(VulkanContext* context, VulkanRenderpass* renderpass,u32 width,u32 height,u32 attachmentCount,std::vector<VkImageView> attachments,VulkanFramebuffer* framebuffer,int deviceIndex){
+    framebuffer->attachments = std::vector<VkImageView>(attachmentCount);
     for(int i=0; i < attachmentCount; i++){
         framebuffer->attachments[i] = attachments[i];
     }
@@ -12,7 +12,7 @@ void vulkan_framebuffer_create(VulkanContext* context, VulkanRenderpass* renderp
     VkFramebufferCreateInfo framebufferCreateInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     framebufferCreateInfo.attachmentCount = attachmentCount;
     framebufferCreateInfo.renderPass = renderpass->handle;
-    framebufferCreateInfo.pAttachments = framebuffer->attachments;
+    framebufferCreateInfo.pAttachments = framebuffer->attachments.data();
     framebufferCreateInfo.width = width;
     framebufferCreateInfo.height = height;
     framebufferCreateInfo.layers = 1;

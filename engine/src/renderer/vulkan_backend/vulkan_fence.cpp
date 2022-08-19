@@ -56,6 +56,7 @@ b8 vulkan_fence_wait(VulkanContext* context, VulkanFence* fence, u64 timeoutNs,i
 
 void vulkan_fence_reset(VulkanContext* context, VulkanFence* fence, int deviceIndex){
     if(fence->isSignaled){
+        // KDEBUG("Resetting fence");
         VK_CHECK(vkResetFences(context->device.logicalDevices[deviceIndex],1,&fence->handle));
         fence->isSignaled = FALSE;
     }

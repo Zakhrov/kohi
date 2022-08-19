@@ -2,7 +2,7 @@
 
 #include "core/kmemory.h"
 
-void vulkan_command_buffer_allocate(VulkanContext* context, VkCommandPool pool,b8 isPrimary,VulkanCommandBuffer *commandBuffer,int deviceIndex){
+void vulkan_command_buffer_allocate(VulkanContext* context, VkCommandPool pool,b8 isPrimary,VulkanCommandBuffer *commandBuffer,int deviceIndex,int bufferId){
 
     
     kzero_memory(commandBuffer,sizeof(VulkanCommandBuffer));
@@ -12,6 +12,7 @@ void vulkan_command_buffer_allocate(VulkanContext* context, VkCommandPool pool,b
     allocateInfo.commandBufferCount = 1;
 
     commandBuffer->state = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
+    commandBuffer->deviceIndex = deviceIndex;
 
     VK_CHECK(vkAllocateCommandBuffers(context->device.logicalDevices[deviceIndex],&allocateInfo,&commandBuffer->handle));
     commandBuffer->state = COMMAND_BUFFER_STATE_READY;
@@ -68,8 +69,8 @@ void vulkan_command_buffer_reset(VulkanCommandBuffer* commandBuffer){
 }
 
 
-void vulkan_command_buffer_allocate_and_begin_single_use(VulkanContext* context, VkCommandPool pool,VulkanCommandBuffer *commandBuffer,int deviceIndex){
-    vulkan_command_buffer_allocate(context,pool,TRUE,commandBuffer,deviceIndex);
+void vulkan_command_buffer_allocate_and_begin_single_use(VulkanContext* context, VkCommandPool pool,VulkanCommandBuffer *commandBuffer,int deviceIndex,int bufferId){
+    vulkan_command_buffer_allocate(context,pool,TRUE,commandBuffer,deviceIndex,bufferId);
     vulkan_command_buffer_begin(commandBuffer,TRUE,FALSE,FALSE);
 
 }

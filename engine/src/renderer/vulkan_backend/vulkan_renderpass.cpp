@@ -13,6 +13,7 @@ void vulkan_renderpass_create(VulkanContext* context, VulkanRenderpass* renderpa
     renderpass->w = w;
     renderpass->x = x;
     renderpass->y = y;
+    renderpass->deviceIndex = deviceIndex;
 
     // Main subpass
     VkSubpassDescription subpass{};
@@ -109,6 +110,9 @@ void vulkan_renderpass_destroy(VulkanContext* context, VulkanRenderpass* renderp
 }
 
 void vulkan_renderpass_begin(VulkanCommandBuffer* commandBuffer, VulkanRenderpass* renderpass,VkFramebuffer frameBuffer ){
+
+    // KDEBUG("Recording renderpass on commandbuffer index %i on device index %i",commandBuffer->id,commandBuffer->deviceIndex);
+
     VkRenderPassBeginInfo beginInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     beginInfo.renderPass = renderpass->handle;
     beginInfo.framebuffer = frameBuffer;

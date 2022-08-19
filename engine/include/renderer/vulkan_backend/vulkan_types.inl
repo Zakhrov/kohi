@@ -72,12 +72,13 @@ typedef struct VulkanRenderpass{
     u32 stencil;
 
     VulkanRenderpassState state;
+    int deviceIndex;
   
 }VulkanRenderpass;
 
 
 typedef struct VulkanFramebuffer{
-  VkImageView* attachments;
+  std::vector<VkImageView> attachments;
   VulkanRenderpass* renderpass;
   u32 attachmentCount;
   VkFramebuffer handle;
@@ -89,10 +90,10 @@ typedef struct VulkanSwapchain{
   u8 maxFramesInFlight;
   VkSwapchainKHR handle;
   u32 imageCount;
-  VkImage* images;
-  VkImageView* views;
+  std::vector<VkImage> images;
+  std::vector<VkImageView> views;
   VulkanImage depthAttachment;
-  VulkanFramebuffer* framebuffers;
+  std::vector<VulkanFramebuffer> framebuffers;
 
 }VulkanSwapchain;
 
@@ -111,6 +112,8 @@ typedef struct VulkanCommandBuffer{
 
     // Command buffer state.
     VulkanCommandBufferState state;
+    int deviceIndex;
+    int id;
 
 }VulkanCommandBuffer;
 
