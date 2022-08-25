@@ -14,5 +14,6 @@ typedef struct Game{
     void (*on_resize) (struct Game* gameInstance,u32 width, u32 height);
     // Game specific Game state created and managed by the game
     void* state;
+    void* applicationState;
 
 }Game;

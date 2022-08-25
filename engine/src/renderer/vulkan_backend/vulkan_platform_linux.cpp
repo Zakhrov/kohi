@@ -14,26 +14,30 @@ void platform_get_required_extension_names(std::vector<const char*>* extensions)
 
 }
 b8 platform_create_vulkan_surface(PlatformState* platformState,VulkanContext* context){
+    if(!platformState){
+        KFATAL("Vulkan surface creation failed.");
+        return false;
+    }
+    
 
-     InternalState *state = ( InternalState *)platformState->internalState;
 
     VkXcbSurfaceCreateInfoKHR createInfo{VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR};
     
-    createInfo.connection = state->connection;
-    createInfo.window = state->window;
+    createInfo.connection = platformState->connection;
+    createInfo.window = platformState->window;
 
     VkResult result = vkCreateXcbSurfaceKHR(
         context->instance,
         &createInfo,
         context->allocator,
-        &state->surface);
+        &platformState->surface);
     if (result != VK_SUCCESS) {
         KFATAL("Vulkan surface creation failed.");
-        return FALSE;
+        return false;
     }
 
-    context->surface = state->surface;
-    return TRUE;
+    context->surface = platformState->surface;
+    return true;
 
 
 }

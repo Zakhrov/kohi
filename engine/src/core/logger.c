@@ -3,13 +3,33 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-b8 initialize_logging(){
+
+
+typedef struct LoggerSystemState {
+    b8 initalized;
+} LoggerSystemState;
+
+static LoggerSystemState* statePtr;
+
+b8 initialize_logging(u64* memoryRequirement, void* state ){
+    *memoryRequirement = sizeof(LoggerSystemState);
+    if(state == 0){
+        return true;
+    }
+    statePtr = state;
+    statePtr->initalized = true;
+
      // TODO: create log file.
+     return true;
 
 
 }
-void shutdown_logging(){
+void shutdown_logging(u64* memoryRequirement, void* state){
+    
+
     // TODO: cleanup logging/write queued entries.
+
+    statePtr = 0;
 
 }
 

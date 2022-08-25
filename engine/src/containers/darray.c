@@ -1,5 +1,5 @@
 #include "containers/darray.h"
-#include "core/kmemory.h"
+#include "memory/kmemory.h"
 #include "core/logger.h"
 
 void* _darray_create(u64 length, u64 stride) {

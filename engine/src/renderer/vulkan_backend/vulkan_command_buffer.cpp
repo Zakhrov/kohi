@@ -1,6 +1,6 @@
 #include "renderer/vulkan_backend/vulkan_command_buffer.h"
 
-#include "core/kmemory.h"
+#include "memory/kmemory.h"
 
 void vulkan_command_buffer_allocate(VulkanContext* context, VkCommandPool pool,b8 isPrimary,VulkanCommandBuffer *commandBuffer,int deviceIndex,int bufferId){
 
@@ -70,8 +70,8 @@ void vulkan_command_buffer_reset(VulkanCommandBuffer* commandBuffer){
 
 
 void vulkan_command_buffer_allocate_and_begin_single_use(VulkanContext* context, VkCommandPool pool,VulkanCommandBuffer *commandBuffer,int deviceIndex,int bufferId){
-    vulkan_command_buffer_allocate(context,pool,TRUE,commandBuffer,deviceIndex,bufferId);
-    vulkan_command_buffer_begin(commandBuffer,TRUE,FALSE,FALSE);
+    vulkan_command_buffer_allocate(context,pool,true,commandBuffer,deviceIndex,bufferId);
+    vulkan_command_buffer_begin(commandBuffer,true,false,false);
 
 }
 

@@ -28,7 +28,7 @@ void create_command_buffers(RendererBackend *backend, int deviceIndex);
 void regenerate_framebuffers(RendererBackend *backend, VulkanSwapchain *swapchain, VulkanRenderpass *renderpass, int deviceIndex);
 b8 recreate_swapchain(RendererBackend *backend, int deviceIndex);
 
-b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *applicationName, struct PlatformState *platformState)
+b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *applicationName)
 {
     application_get_framebuffer_size(&cachedFramebufferWidth, &cachedFramebufferHeight);
 
@@ -66,13 +66,13 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
     for (int i = 0; i < requiredLayers.size(); i++)
     {
         KINFO("Searching for layer: %s ...", requiredLayers[i]);
-        b8 found = FALSE;
+        b8 found = false;
         for (int j = 0; j < availableLayerCount; j++)
         {
             KINFO("Available layer: %s", availableLayers[j].layerName);
             if (strcmp(requiredLayers[i], availableLayers[j].layerName) == 0)
             {
-                found = TRUE;
+                found = true;
                 KINFO("Found %s", requiredLayers[i]);
                 break;
             }
@@ -80,7 +80,7 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
         if (!found)
         {
             KFATAL("Required validation layer %s is missing", requiredLayers[i]);
-            return FALSE;
+            return false;
         }
     }
     KINFO("All required validation layers found");
@@ -110,17 +110,17 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
 #endif
 
     KDEBUG("Creating Vulkan surface...");
-    if (!platform_create_vulkan_surface(platformState, &context))
+    if (!platform_create_vulkan_surface(backend->platformState,&context))
     {
         KERROR("Failed to create platform surface!");
-        return FALSE;
+        return false;
     }
     KDEBUG("Vulkan surface created.");
 
     if (!vulkan_device_create(&context))
     {
         KERROR("Failed to create Vulkan device");
-        return FALSE;
+        return false;
     }
     context.framebufferWidth = std::vector<u64>(context.device.deviceCount);
     context.framebufferHeight = std::vector<u64>(context.device.deviceCount);
@@ -164,7 +164,7 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
             // Create the fence in a signaled state, indicating that the first frame has already been "rendered".
             // This will prevent the application from waiting indefinitely for the first frame to render since it
             // cannot be rendered until a frame is "rendered" before it.
-            vulkan_fence_create(&context, TRUE, &context.inFlightFences[deviceIndex][i], deviceIndex);
+            vulkan_fence_create(&context, true, &context.inFlightFences[deviceIndex][i], deviceIndex);
         }
         // In flight fences should not yet exist at this point, so clear the list. These are stored in pointers
         // because the initial state should be 0, and will be 0 when not in use. Acutal fences are not owned
@@ -177,7 +177,7 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
     }
 
     KINFO("Vulkan backend initialized successfully");
-    return TRUE;
+    return true;
 }
 void vulkan_renderer_backend_shutdown(RendererBackend *backend)
 {
@@ -195,12 +195,12 @@ void vulkan_renderer_backend_shutdown(RendererBackend *backend)
             {
 
                 vkDestroySemaphore(context.device.logicalDevices[deviceIndex], context.imageAvalableSemaphores[deviceIndex][i], context.allocator);
-                KINFO("Destroyed imageAvalableSemaphore %i for %s", i, context.device.properties[deviceIndex].deviceName);
+                // KINFO("Destroyed imageAvalableSemaphore %i for %s", i, context.device.properties[deviceIndex].deviceName);
             }
             if (context.queueCompleteSemaphores[deviceIndex][i] != VK_NULL_HANDLE)
             {
                 vkDestroySemaphore(context.device.logicalDevices[deviceIndex], context.queueCompleteSemaphores[deviceIndex][i], context.allocator);
-                KINFO("Destroyed queueCompleteSemaphores %i for %s", i, context.device.properties[deviceIndex].deviceName);
+                // KINFO("Destroyed queueCompleteSemaphores %i for %s", i, context.device.properties[deviceIndex].deviceName);
             }
             vulkan_fence_destroy(&context, &context.inFlightFences[deviceIndex][i], deviceIndex);
         }
@@ -215,14 +215,14 @@ void vulkan_renderer_backend_shutdown(RendererBackend *backend)
             {
                 vulkan_command_buffer_free(&context, context.device.graphicsCommandPools[deviceIndex], &context.graphicsCommandBuffers[deviceIndex][i], deviceIndex);
                 context.graphicsCommandBuffers[deviceIndex][i].handle = VK_NULL_HANDLE;
-                KINFO("Free commandBuffer %i for device %s ", i, context.device.properties[deviceIndex].deviceName);
+                // KINFO("Free commandBuffer %i for device %s ", i, context.device.properties[deviceIndex].deviceName);
             }
         }
 
         for (int i = 0; i < context.swapchains[deviceIndex].imageCount; i++)
         {
             vulkan_framebuffer_destroy(&context, &context.swapchains[deviceIndex].framebuffers[i], deviceIndex);
-            KINFO("Destroyed framebuffer %i for device %s ", i, context.device.properties[deviceIndex].deviceName);
+            // KINFO("Destroyed framebuffer %i for device %s ", i, context.device.properties[deviceIndex].deviceName);
         }
 
         vulkan_renderpass_destroy(&context, &context.mainRenderPasses[deviceIndex], deviceIndex);
@@ -267,32 +267,32 @@ b8 vulkan_renderer_backend_begin_frame(RendererBackend *backend, f64 deltaTime)
     if (context.recreatingSwapchain[deviceIndex]) {
         VkResult result = vkDeviceWaitIdle(context.device.logicalDevices[deviceIndex]);
         if (!vulkan_result_is_success(result)) {
-            KERROR("vulkan_renderer_backend_begin_frame vkDeviceWaitIdle (1) failed: '%s'", vulkan_result_string(result, TRUE));
-            return FALSE;
+            KERROR("vulkan_renderer_backend_begin_frame vkDeviceWaitIdle (1) failed: '%s'", vulkan_result_string(result, true));
+            return false;
         }
         KINFO("Recreating swapchain, booting.");
-        return FALSE;
+        return false;
     }
       if (context.framebufferSizeGeneration[deviceIndex] != context.framebufferSizeLastGeneration[deviceIndex]) {
         VkResult result = vkDeviceWaitIdle(context.device.logicalDevices[deviceIndex]);
         if (!vulkan_result_is_success(result)) {
-            KERROR("vulkan_renderer_backend_begin_frame vkDeviceWaitIdle (2) failed: '%s'", vulkan_result_string(result, TRUE));
-            return FALSE;
+            KERROR("vulkan_renderer_backend_begin_frame vkDeviceWaitIdle (2) failed: '%s'", vulkan_result_string(result, true));
+            return false;
         }
 
         // If the swapchain recreation failed (because, for example, the window was minimized),
         // boot out before unsetting the flag.
         if (!recreate_swapchain(backend,deviceIndex)) {
-            return FALSE;
+            return false;
         }
 
         KINFO("Resized, booting.");
-        return FALSE;
+        return false;
     }
     // Wait for the execution of the current frame to complete. The fence being free will allow this one to move on.
     if (!vulkan_fence_wait(&context,&context.inFlightFences[deviceIndex][context.currentFrame[deviceIndex]],UINT64_MAX,deviceIndex)) {
         KWARN("In-flight fence wait failure!");
-        return FALSE;
+        return false;
     }
     // Acquire the next image from the swap chain. Pass along the semaphore that should signaled when this completes.
     // This same semaphore will later be waited on by the queue submission to ensure this image is available.
@@ -303,14 +303,14 @@ b8 vulkan_renderer_backend_begin_frame(RendererBackend *backend, f64 deltaTime)
             context.imageAvalableSemaphores[deviceIndex][context.currentFrame[deviceIndex]],
             0,
             &context.imageIndex[deviceIndex],deviceIndex)) {
-        return FALSE;
+        return false;
     }
     // KDEBUG(" ImageIndex >>>> %i on %s",context.imageIndex[deviceIndex],context.device.properties[deviceIndex].deviceName);
     // KDEBUG(" CurrentFrame >>>> %i on %s",context.currentFrame[deviceIndex],context.device.properties[deviceIndex].deviceName);
     // Begin recording commands.
     VulkanCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.currentFrame[deviceIndex]];
     vulkan_command_buffer_reset(commandBuffer);
-    vulkan_command_buffer_begin(commandBuffer, FALSE, FALSE, FALSE);
+    vulkan_command_buffer_begin(commandBuffer, false, false, false);
     // Dynamic state
     VkViewport viewport;
     viewport.x = 0.0f;
@@ -337,7 +337,7 @@ b8 vulkan_renderer_backend_begin_frame(RendererBackend *backend, f64 deltaTime)
         &context.mainRenderPasses[deviceIndex],
         context.swapchains[deviceIndex].framebuffers[context.currentFrame[deviceIndex]].handle);
     
-    return TRUE;
+    return true;
 
     
     
@@ -389,8 +389,8 @@ b8 vulkan_renderer_backend_end_frame(RendererBackend *backend, f64 deltaTime)
         &submitInfo,
         context.inFlightFences[deviceIndex][context.currentFrame[deviceIndex]].handle);
     if (result != VK_SUCCESS) {
-        KERROR("vkQueueSubmit failed with result: %s", vulkan_result_string(result, TRUE));
-        return FALSE;
+        KERROR("vkQueueSubmit failed with result: %s", vulkan_result_string(result, true));
+        return false;
     }
 
     vulkan_command_buffer_update_submitted(commandBuffer);
@@ -407,7 +407,7 @@ b8 vulkan_renderer_backend_end_frame(RendererBackend *backend, f64 deltaTime)
         context.imageIndex[deviceIndex],deviceIndex);
     vkDeviceWaitIdle(context.device.logicalDevices[deviceIndex]);
 
-    return TRUE;
+    return true;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT *callbackData, void *userData)
@@ -454,8 +454,8 @@ void create_command_buffers(RendererBackend *backend, int deviceIndex)
         if (context.graphicsCommandBuffers[deviceIndex][i].handle == VK_NULL_HANDLE)
         {
             vulkan_command_buffer_free(&context, context.device.graphicsCommandPools[deviceIndex], &context.graphicsCommandBuffers[deviceIndex][i], deviceIndex);
-            vulkan_command_buffer_allocate(&context, context.device.graphicsCommandPools[deviceIndex], TRUE, &context.graphicsCommandBuffers[deviceIndex][i], deviceIndex,i);
-            KINFO("Allocated commandBuffer %i for device %s ", i, context.device.properties[deviceIndex].deviceName);
+            vulkan_command_buffer_allocate(&context, context.device.graphicsCommandPools[deviceIndex], true, &context.graphicsCommandBuffers[deviceIndex][i], deviceIndex,i);
+            // KINFO("Allocated commandBuffer %i for device %s ", i, context.device.properties[deviceIndex].deviceName);
         }
     }
 }
@@ -466,7 +466,7 @@ void regenerate_framebuffers(RendererBackend *backend, VulkanSwapchain *swapchai
     
     for (int i = 0; i < swapchain->imageCount; i++)
     {
-        KDEBUG("Regenerating framebuffer %i for %s",i,context.device.properties[deviceIndex].deviceName);
+        
         // if(context.swapchains[deviceIndex].framebuffers[i].handle != VK_NULL_HANDLE){
         //     vulkan_framebuffer_destroy(&context,&context.swapchains[deviceIndex].framebuffers[i],deviceIndex);
         // }
@@ -495,14 +495,14 @@ b8 recreate_swapchain(RendererBackend *backend, int deviceIndex)
     if (context.recreatingSwapchain[deviceIndex])
     {
         KDEBUG("Recreating swapchain already in progress");
-        return FALSE;
+        return false;
     }
     if (context.framebufferWidth[deviceIndex] == 0 || context.framebufferHeight[deviceIndex] == 0)
     {
         KDEBUG("Framebuffer too small");
-        return FALSE;
+        return false;
     }
-    context.recreatingSwapchain[deviceIndex] = TRUE;
+    context.recreatingSwapchain[deviceIndex] = true;
     vkDeviceWaitIdle(context.device.logicalDevices[deviceIndex]);
     for (u32 i = 0; i < context.swapchains[deviceIndex].imageCount; ++i) {
         context.imagesInFlight[deviceIndex][i] = 0;
@@ -531,7 +531,7 @@ b8 recreate_swapchain(RendererBackend *backend, int deviceIndex)
     // Framebuffers.
     for (u32 i = 0; i < context.swapchains[deviceIndex].imageCount; ++i)
     {
-        KDEBUG("Destroying framebuffer %i on device %s",i,context.device.properties[deviceIndex].deviceName);
+       
         vulkan_framebuffer_destroy(&context, &context.swapchains[deviceIndex].framebuffers[i], deviceIndex);
     }
 
@@ -549,7 +549,7 @@ b8 recreate_swapchain(RendererBackend *backend, int deviceIndex)
     create_command_buffers(backend, deviceIndex);
 
     // Clear the recreating flag.
-    context.recreatingSwapchain[deviceIndex] = FALSE;
+    context.recreatingSwapchain[deviceIndex] = false;
 
-    return TRUE;
+    return true;
 }

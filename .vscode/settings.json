@@ -57,6 +57,7 @@
         "streambuf": "cpp",
         "thread": "cpp",
         "typeinfo": "cpp",
-        "kohi_asserts.h": "c"
+        "kohi_asserts.h": "c",
+        "xcb.h": "c"
     }
 }

@@ -2,25 +2,45 @@
 #include "platform/platform.h"
 
 #include "game_types.h"
-#include "core/kmemory.h"
+#include "memory/kmemory.h"
 #include "core/clock.h"
 #include "renderer/renderer_frontend.h"
+#include "memory/linear_allocator.h"
 
 
 typedef struct ApplicationState{
     Game* gameInstance;
     b8 isRunning;
     b8 isSuspended;
-    PlatformState platform;
     i16 width;
     i16 height;
     KohiClock clock;
     f64 lastTime;
+    LinearAllocator systemsAllocator;
+
+     u64 eventSystemMemoryReqs;
+    void* eventSystemState;
+
+    u64 inputSystemMemoryReqs;
+    void* inputSystemState;
+
+    u64 loggingSystemMemoryReqs;
+    void* loggingSystemState;
+
+    u64 memorySystemMemoryReqs;
+    void* memorySystemState;
+
+    u64 platformSystemMemoryReqs;
+    void* platformSystemState;
+
+    u64 rendererSystemMemoryReqs;
+    void* rendererSystemState;
+
 
 } ApplicationState;
 
-static b8 initialized = FALSE;
-static ApplicationState applicationState;
+
+static ApplicationState* applicationState;
 
 
 b8 application_on_event(u16 code, void* sender, void* listener_inst, EventContext context);
@@ -28,85 +48,120 @@ b8 application_on_key(u16 code, void* sender, void* listener_inst, EventContext 
 b8 application_on_resize(u16 code, void* sender, void* listener_inst, EventContext context);
 
 b8 application_create(Game* gameInstance){
-    if(initialized){
+    if(gameInstance->applicationState){
         KERROR("Application Create called more than once");
-        return FALSE;
+        return false;
     }
-    applicationState.gameInstance = gameInstance;
-    // Initialize subsystems
-    initialize_logging();
+    // kfree(gameInstance->applicationState,sizeof(ApplicationState),MEMORY_TAG_APPLICATION);
+    gameInstance->applicationState = kallocate(sizeof(ApplicationState),MEMORY_TAG_APPLICATION);
+    applicationState = gameInstance->applicationState;
+    applicationState->gameInstance = gameInstance;
+    applicationState->isRunning = false;
+    applicationState->isSuspended = false;
+    u64 systemsAllocatorTotalSize = 64 * 1024 * 1024; // 64 MiB
+    linear_allocator_create(systemsAllocatorTotalSize,0,&applicationState->systemsAllocator);
     
 
+    
 
-    applicationState.isRunning = TRUE;
-    applicationState.isSuspended = FALSE;
+    
+    // Initialize subsystems
 
-      if(!event_initialize()) {
-        KERROR("Event system failed initialization. Application cannot continue.");
-        return FALSE;
+    // Memory
+    memory_system_initialize(&applicationState->memorySystemMemoryReqs,0);
+    KDEBUG("MEMORY SYSTEM REQS %i",applicationState->memorySystemMemoryReqs);
+    applicationState->memorySystemState = linear_allocator_allocate(&applicationState->systemsAllocator,applicationState->memorySystemMemoryReqs);
+    memory_system_initialize(&applicationState->memorySystemMemoryReqs,applicationState->memorySystemState);
+
+    // Logging
+    initialize_logging(&applicationState->loggingSystemMemoryReqs,0);
+    applicationState->loggingSystemState = linear_allocator_allocate(&applicationState->systemsAllocator,applicationState->loggingSystemMemoryReqs);
+    if(!initialize_logging(&applicationState->loggingSystemMemoryReqs,applicationState->loggingSystemState)){
+        KERROR("Logging system failed to initialize");
+        return false;
     }
 
+     // Events
+    event_system_initialize(&applicationState->eventSystemMemoryReqs,0);
+    applicationState->eventSystemState = linear_allocator_allocate(&applicationState->systemsAllocator,applicationState->eventSystemMemoryReqs);
+    event_system_initialize(&applicationState->eventSystemMemoryReqs,applicationState->eventSystemState);
+
+    // Inputs
+    input_system_initialize(&applicationState->inputSystemMemoryReqs,0);
+    applicationState->inputSystemState = linear_allocator_allocate(&applicationState->systemsAllocator,applicationState->inputSystemMemoryReqs);
+    input_system_initialize(&applicationState->inputSystemMemoryReqs,applicationState->inputSystemState);
+
+    
+    platform_system_startup(&applicationState->platformSystemMemoryReqs,0,0,0,0,0,0);
+    applicationState->platformSystemState = linear_allocator_allocate(&applicationState->systemsAllocator,applicationState->platformSystemMemoryReqs);
+    platform_system_startup(&applicationState->platformSystemMemoryReqs,
+    applicationState->platformSystemState,
+    gameInstance->applicationConfig.name,
+    gameInstance->applicationConfig.startX,
+    gameInstance->applicationConfig.startY,
+    gameInstance->applicationConfig.startWidth,
+    gameInstance->applicationConfig.startHeight);
+
+    renderer_system_initialize(&applicationState->rendererSystemMemoryReqs,0,0,0);
+    applicationState->rendererSystemState = linear_allocator_allocate(&applicationState->systemsAllocator,applicationState->rendererSystemMemoryReqs);
+    
+    if(!renderer_system_initialize(&applicationState->rendererSystemMemoryReqs,applicationState->rendererSystemState,applicationState->platformSystemState,gameInstance->applicationConfig.name)){
+        KFATAL("Failed to initialize renderer");
+        return false;
+    }
+    
+
+    // Event Registration 
     event_register(EVENT_CODE_APPLICATION_QUIT, 0, application_on_event);
     event_register(EVENT_CODE_KEY_PRESSED, 0, application_on_key);
     event_register(EVENT_CODE_KEY_RELEASED, 0, application_on_key);
     event_register(EVENT_CODE_RESIZED ,0,application_on_resize);
 
-    if (!platform_startup(&applicationState.platform,
-    gameInstance->applicationConfig.name,
-    gameInstance->applicationConfig.startX,
-    gameInstance->applicationConfig.startY,
-    gameInstance->applicationConfig.startWidth,
-    gameInstance->applicationConfig.startHeight)) {
-        return FALSE;
-    }
-    if(!renderer_initialize(gameInstance->applicationConfig.name,&applicationState.platform)){
-        KFATAL("Renderer initialization failed Shutting down...");
-        return FALSE;
-    }
     // Initialize the Game
-    if(!applicationState.gameInstance->initialize(applicationState.gameInstance)){
+    if(!applicationState->gameInstance->initialize(applicationState->gameInstance)){
         KFATAL("Failed to initialize game");
-        return FALSE;
+        return false;
     }
-    applicationState.gameInstance->on_resize(applicationState.gameInstance,applicationState.width,applicationState.height);
+    applicationState->gameInstance->on_resize(applicationState->gameInstance,applicationState->width,applicationState->height);
 
     
     
-    initialized = TRUE;
-    return TRUE;
+    
+    return true;
 
 
 }
 
 b8 application_run(){
-    clock_start(&applicationState.clock);
-    clock_update(&applicationState.clock);
-    applicationState.lastTime = applicationState.clock.elaplsedTime;
+    applicationState->isRunning = true;
+    clock_start(&applicationState->clock);
+    clock_update(&applicationState->clock);
+    applicationState->lastTime = applicationState->clock.elaplsedTime;
     f64 runTime = 0;
     u8 frameCount = 0;
     f64 targetFrameTimeSeconds = 1.0f / 60;
     
     KINFO(get_memory_usage_str());
-    while (applicationState.isRunning)
+    while (applicationState->isRunning)
     {
-        if(!platform_pump_messages(&applicationState.platform)){
-            applicationState.isRunning = FALSE;
+        if(!platform_pump_messages(&applicationState->platformSystemState)){
+            applicationState->isRunning = false;
         }
-        if(!applicationState.isSuspended){
-            clock_update(&applicationState.clock);
-            f64 currentTime = applicationState.clock.elaplsedTime;
-            f64 deltaTime = currentTime - applicationState.lastTime;
+        if(!applicationState->isSuspended){
+            clock_update(&applicationState->clock);
+            f64 currentTime = applicationState->clock.elaplsedTime;
+            f64 deltaTime = currentTime - applicationState->lastTime;
             f64 frameStartTime = platform_get_absolute_time();
 
-            if(!applicationState.gameInstance->update(applicationState.gameInstance,(f32)deltaTime)){
+            if(!applicationState->gameInstance->update(applicationState->gameInstance,(f32)deltaTime)){
                 KFATAL("Failed to update game state Shutting down");
-                applicationState.isRunning = FALSE;
+                applicationState->isRunning = false;
                 break;
             }
 
-            if(!applicationState.gameInstance->render(applicationState.gameInstance,(f32)deltaTime)){
+            if(!applicationState->gameInstance->render(applicationState->gameInstance,(f32)deltaTime)){
                 KFATAL("Failed to Render game Shutting down");
-                applicationState.isRunning = FALSE;
+                applicationState->isRunning = false;
                 break;
             }
             // TODO: Replace with something better
@@ -120,7 +175,7 @@ b8 application_run(){
             f64 remainingSeconds = targetFrameTimeSeconds - frameElapsedTime;
             if(remainingSeconds > 0){
                 u64 remainingMs = remainingSeconds * 1000;
-                b8 frameLimit = FALSE;
+                b8 frameLimit = false;
                 if(remainingMs > 0 && frameLimit){
                     platform_sleep(remainingMs -1);
                 }
@@ -128,31 +183,33 @@ b8 application_run(){
             }
             input_update(deltaTime);
 
-            applicationState.lastTime = currentTime;
+            applicationState->lastTime = currentTime;
         }
 
         
     }
-    applicationState.isRunning = FALSE;
+    applicationState->isRunning = false;
      event_unregister(EVENT_CODE_APPLICATION_QUIT, 0, application_on_event);
     event_unregister(EVENT_CODE_KEY_PRESSED, 0, application_on_key);
     event_unregister(EVENT_CODE_KEY_RELEASED, 0, application_on_key);
-    event_shutdown();
-    input_shutdown();
+    
+    input_system_shutdown(applicationState->inputSystemState);
     
     renderer_shutdown();
-    platform_shutdown(&applicationState.platform);
+    platform_system_shutdown(&applicationState->platformSystemState);
+    memory_system_shutdown(applicationState->memorySystemState);
+    
     
 
 
-    return TRUE;
+    return true;
     
 
 }
 
 void application_get_framebuffer_size(u64* width, u64* height){
-    *width = applicationState.width;
-    *height = applicationState.height;
+    *width = applicationState->width;
+    *height = applicationState->height;
     
 }
 
@@ -161,12 +218,12 @@ b8 application_on_event(u16 code, void* sender, void* listener_inst, EventContex
     switch (code) {
         case EVENT_CODE_APPLICATION_QUIT: {
             KINFO("EVENT_CODE_APPLICATION_QUIT recieved, shutting down.\n");
-            applicationState.isRunning = FALSE;
-            return TRUE;
+            applicationState->isRunning = false;
+            return true;
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 b8 application_on_key(u16 code, void* sender, void* listener_inst, EventContext context) {
@@ -178,7 +235,7 @@ b8 application_on_key(u16 code, void* sender, void* listener_inst, EventContext 
             event_fire(EVENT_CODE_APPLICATION_QUIT, 0, data);
 
             // Block anything else from processing this.
-            return TRUE;
+            return true;
         } else if (key_code == KEY_A) {
             // Example on checking for a key
             KDEBUG("Explicit - A key pressed!");
@@ -194,32 +251,32 @@ b8 application_on_key(u16 code, void* sender, void* listener_inst, EventContext 
             KDEBUG("'%c' key released in window.", key_code);
         }
     }
-    return FALSE;
+    return false;
 } 
 
 b8 application_on_resize(u16 code, void* sender, void* listener_inst, EventContext context){
     if(code == EVENT_CODE_RESIZED){
         u16 width = context.data.u16[0];
         u16 height = context.data.u16[1];
-        if(width != applicationState.width || height != applicationState.height){
-            applicationState.width = width;
-            applicationState.height = height;
+        if(width != applicationState->width || height != applicationState->height){
+            applicationState->width = width;
+            applicationState->height = height;
             KDEBUG("Window resize %i, %i",width,height);
             if(width == 0 || height == 0){
                 KINFO("Window minimized suspending application");
-                applicationState.isSuspended = TRUE;
-                return TRUE;
+                applicationState->isSuspended = true;
+                return true;
             }
             else{
-                if(applicationState.isSuspended){
+                if(applicationState->isSuspended){
                     KINFO("Window restored resuming application");
-                    applicationState.isSuspended = FALSE;
+                    applicationState->isSuspended = false;
 
                 }
-                applicationState.gameInstance->on_resize(applicationState.gameInstance,width,height);
+                applicationState->gameInstance->on_resize(applicationState->gameInstance,width,height);
                 renderer_on_resized(width, height);
             }
         }
     }
-    return FALSE; //  explicitly not handle so other events can fire
+    return false; //  explicitly not handle so other events can fire
 }

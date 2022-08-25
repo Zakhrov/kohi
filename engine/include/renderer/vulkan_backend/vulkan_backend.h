@@ -6,7 +6,7 @@
 extern "C"
 {
 #endif
-b8 vulkan_renderer_backend_initialize(RendererBackend* backend, const char* applicationName, struct PlatformState* platformState);
+b8 vulkan_renderer_backend_initialize(RendererBackend* backend, const char* applicationName);
 void vulkan_renderer_backend_shutdown(RendererBackend* backend);
 
 void vulkan_renderer_backend_on_resized(RendererBackend* backend, u16 width, u16 height);

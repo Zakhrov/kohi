@@ -2,29 +2,26 @@
 
 #include "../defines.h"
 
-typedef struct PlatformState
-{
-    void* internalState;
-}PlatformState;
 
 #ifdef __cplusplus
-
-#include "../renderer/vulkan_backend/vulkan_platform.h"
 extern "C"
 {
 #endif
 
-b8 platform_startup(
-    PlatformState* platformState,
+
+
+void platform_system_startup(
+    u64* memoryRequirement,
+    void* platformState,
     const char* applicationName,
     i32 x,
     i32 y,
     i32 width,
     i32 height);
 
-void platform_shutdown(PlatformState* platformState);
+void platform_system_shutdown(void* platformState);
 
-b8 platform_pump_messages(PlatformState* platformState);
+b8 platform_pump_messages(void* platformState);
 
 void* platform_allocate(u64 size, b8 aligned);
 void platform_free(void* block, b8 aligned);
@@ -41,6 +38,7 @@ f64 platform_get_absolute_time();
 // Should only be used for giving time back to the OS for unused update power.
 // Therefore it is not exported.
 void platform_sleep(u64 ms); 
+
 
 
 #ifdef __cplusplus

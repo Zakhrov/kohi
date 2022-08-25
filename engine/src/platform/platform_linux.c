@@ -4,12 +4,13 @@
 // Linux platform layer.
 #if KPLATFORM_LINUX
 
-#include "core/logger.h"
 #include "core/input.h"
 #include "core/event.h"
 
+#define VK_USE_PLATFORM_XCB_KHR
 #include "platform/platform_linux.inl"
 #include <sys/time.h>
+
 
 
 #if _POSIX_C_SOURCE >= 199309L
@@ -22,37 +23,46 @@
 #include <stdio.h>
 #include <string.h>
 
+static PlatformState* statePtr;
 
 Keys translate_keycode(u32 x_keycode);
 
 
-b8 platform_startup(
-    PlatformState* platformState,
+
+
+void platform_system_startup(
+    u64* memoryRequirment,
+    void* platformState,
     const char* application_name,
     i32 x,
     i32 y,
     i32 width,
     i32 height) {
-    // Create the internal state.
-    platformState->internalState = malloc(sizeof(InternalState));
-    InternalState* state = (InternalState*)platformState->internalState;
+    // Create the internal statePtr.
+    *memoryRequirment = sizeof(PlatformState);
+    if(platformState == 0){
+        return;
+    }
+    kzero_memory(platformState,sizeof(PlatformState));
+    statePtr = platformState;
+    
 
     // Connect to X
-    state->display = XOpenDisplay(NULL);
+    statePtr->display = XOpenDisplay(NULL);
 
     // Turn off key repeats.
-    // XAutoRepeatOff(state->display);
+    // XAutoRepeatOff(statePtr->display);
 
     // Retrieve the connection from the display.
-    state->connection = XGetXCBConnection(state->display);
+    statePtr->connection = XGetXCBConnection(statePtr->display);
 
-    if (xcb_connection_has_error(state->connection)) {
+    if (xcb_connection_has_error(statePtr->connection)) {
         KFATAL("Failed to connect to X server via XCB.");
-        return FALSE;
+        return;
     }
 
     // Get data from the X server
-    const struct xcb_setup_t* setup = xcb_get_setup(state->connection);
+    const struct xcb_setup_t* setup = xcb_get_setup(statePtr->connection);
 
     // Loop through screens using iterator
     xcb_screen_iterator_t it = xcb_setup_roots_iterator(setup);
@@ -62,10 +72,10 @@ b8 platform_startup(
     }
 
     // After screens have been looped through, assign it.
-    state->screen = it.data;
+    statePtr->screen = it.data;
 
     // Allocate a XID for the window to be created.
-    state->window = xcb_generate_id(state->connection);
+    statePtr->window = xcb_generate_id(statePtr->connection);
 
     // Register event types.
     // XCB_CW_BACK_PIXEL = filling then window bg with a single colour
@@ -79,29 +89,29 @@ b8 platform_startup(
                        XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 
     // Values to be sent over XCB (bg colour, events)
-    u32 value_list[] = {state->screen->black_pixel, event_values};
+    u32 value_list[] = {statePtr->screen->black_pixel, event_values};
 
     // Create the window
     xcb_void_cookie_t cookie = xcb_create_window(
-        state->connection,
+        statePtr->connection,
         XCB_COPY_FROM_PARENT,  // depth
-        state->window,
-        state->screen->root,            // parent
+        statePtr->window,
+        statePtr->screen->root,            // parent
         x,                              //x
         y,                              //y
         width,                          //width
         height,                         //height
         0,                              // No border
         XCB_WINDOW_CLASS_INPUT_OUTPUT,  //class
-        state->screen->root_visual,
+        statePtr->screen->root_visual,
         event_mask,
         value_list);
 
     // Change the title
     xcb_change_property(
-        state->connection,
+        statePtr->connection,
         XCB_PROP_MODE_REPLACE,
-        state->window,
+        statePtr->window,
         XCB_ATOM_WM_NAME,
         XCB_ATOM_STRING,
         8,  // data should be viewed 8 bits at a time
@@ -111,30 +121,30 @@ b8 platform_startup(
     // Tell the server to notify when the window manager
     // attempts to destroy the window.
     xcb_intern_atom_cookie_t wm_delete_cookie = xcb_intern_atom(
-        state->connection,
+        statePtr->connection,
         0,
         strlen("WM_DELETE_WINDOW"),
         "WM_DELETE_WINDOW");
     xcb_intern_atom_cookie_t wm_protocols_cookie = xcb_intern_atom(
-        state->connection,
+        statePtr->connection,
         0,
         strlen("WM_PROTOCOLS"),
         "WM_PROTOCOLS");
     xcb_intern_atom_reply_t* wm_delete_reply = xcb_intern_atom_reply(
-        state->connection,
+        statePtr->connection,
         wm_delete_cookie,
         NULL);
     xcb_intern_atom_reply_t* wm_protocols_reply = xcb_intern_atom_reply(
-        state->connection,
+        statePtr->connection,
         wm_protocols_cookie,
         NULL);
-    state->wm_delete_win = wm_delete_reply->atom;
-    state->wm_protocols = wm_protocols_reply->atom;
+    statePtr->wm_delete_win = wm_delete_reply->atom;
+    statePtr->wm_protocols = wm_protocols_reply->atom;
 
     xcb_change_property(
-        state->connection,
+        statePtr->connection,
         XCB_PROP_MODE_REPLACE,
-        state->window,
+        statePtr->window,
         wm_protocols_reply->atom,
         4,
         32,
@@ -142,40 +152,43 @@ b8 platform_startup(
         &wm_delete_reply->atom);
 
     // Map the window to the screen
-    xcb_map_window(state->connection, state->window);
+    xcb_map_window(statePtr->connection, statePtr->window);
 
     // Flush the stream
-    i32 stream_result = xcb_flush(state->connection);
+    i32 stream_result = xcb_flush(statePtr->connection);
     if (stream_result <= 0) {
         KFATAL("An error occurred when flusing the stream: %d", stream_result);
-        return FALSE;
+        return;
     }
 
-    return TRUE;
+    
 }
 
-void platform_shutdown(PlatformState* platformState) {
-    // Simply cold-cast to the known type.
-    InternalState* state = (InternalState*)platformState->internalState;
 
-    // Turn key repeats back on since this is global for the OS... just... wow.
-    // XAutoRepeatOn(state->display);
 
-    xcb_destroy_window(state->connection, state->window);
+void platform_system_shutdown(void* platformState) {
+    
+    xcb_destroy_window(statePtr->connection, statePtr->window);
+    statePtr = 0;
+
+    
+
+    
 }
 
-b8 platform_pump_messages(PlatformState* platformState) {
-    // Simply cold-cast to the known type.
-    InternalState* state = (InternalState*)platformState->internalState;
+
+
+b8 platform_pump_messages(void* platformState) {
+    
 
     xcb_generic_event_t* event;
     xcb_client_message_event_t* cm;
 
-    b8 quit_flagged = FALSE;
+    b8 quit_flagged = false;
 
     // Poll for events until null is returned.
     while (event != 0) {
-        event = xcb_poll_for_event(state->connection);
+        event = xcb_poll_for_event(statePtr->connection);
         if (event == 0) {
             break;
         }
@@ -189,7 +202,7 @@ b8 platform_pump_messages(PlatformState* platformState) {
                 b8 pressed = event->response_type == XCB_KEY_PRESS;
                 xcb_keycode_t code = kb_event->detail;
                 KeySym key_sym = XkbKeycodeToKeysym(
-                    state->display,
+                    statePtr->display,
                     (KeyCode)code,  //event.xkey.keycode,
                     0,
                     code & ShiftMask ? 1 : 0);
@@ -249,8 +262,8 @@ b8 platform_pump_messages(PlatformState* platformState) {
                 cm = (xcb_client_message_event_t*)event;
 
                 // Window close
-                if (cm->data.data32[0] == state->wm_delete_win) {
-                    quit_flagged = TRUE;
+                if (cm->data.data32[0] == statePtr->wm_delete_win) {
+                    quit_flagged = true;
                 }
             } break;
             default:
@@ -477,8 +490,10 @@ Keys translate_keycode(u32 x_keycode) {
         case XK_Control_R:
             return KEY_RCONTROL;
         // case XK_Menu: return KEY_LMENU;
-        case XK_Menu:
-            return KEY_RMENU;
+        case XK_Alt_L:
+            return KEY_LALT;
+        case XK_Alt_R:
+            return KEY_RALT;
 
         case XK_semicolon:
             return KEY_SEMICOLON;

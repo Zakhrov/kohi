@@ -8,7 +8,7 @@ extern "C"
 {
 #endif
 
-b8 renderer_backend_create(RendererBackendType rendererBackendType,struct PlatformState* platformState,RendererBackend* backend);
+b8 renderer_backend_create(RendererBackendType rendererBackendType,RendererBackend* backend);
 void renderer_backend_destroy(RendererBackend* backend);
 
 

@@ -1,7 +1,7 @@
 #include "renderer/renderer_backend.h"
 #include "renderer/vulkan_backend/vulkan_backend.h"
-b8 renderer_backend_create(RendererBackendType rendererBackendType,struct PlatformState* platformState,RendererBackend* backend){
-    backend->platformState = platformState;
+b8 renderer_backend_create(RendererBackendType rendererBackendType,RendererBackend* backend){
+    
     if(rendererBackendType == RENDERER_BACKEND_TYPE_VULKAN){
         backend->initialize = vulkan_renderer_backend_initialize;
         backend->shutdown = vulkan_renderer_backend_shutdown;
@@ -11,9 +11,9 @@ b8 renderer_backend_create(RendererBackendType rendererBackendType,struct Platfo
 
         
 
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
     
 
 }

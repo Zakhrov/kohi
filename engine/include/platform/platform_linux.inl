@@ -5,7 +5,9 @@
 #include <X11/Xlib.h>
 #include <X11/Xlib-xcb.h>  // sudo apt-get install libxkbcommon-x11-dev
 #include <vulkan/vulkan.h>
-typedef struct InternalState {
+#include "../memory/kmemory.h"
+#include "../core/logger.h"
+typedef struct PlatformState {
     Display* display;
     xcb_connection_t* connection;
     xcb_window_t window;
@@ -13,4 +15,4 @@ typedef struct InternalState {
     xcb_atom_t wm_protocols;
     xcb_atom_t wm_delete_win;
     VkSurfaceKHR surface;
-} InternalState;
+} PlatformState;

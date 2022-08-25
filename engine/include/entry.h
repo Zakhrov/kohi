@@ -3,7 +3,7 @@
 #include "core/application.h"
 #include "core/logger.h"
 #include "game_types.h"
-#include "core/kmemory.h"
+#include "memory/kmemory.h"
 
 // Externally defined function to create a game
 extern b8 create_game(Game* outGame);
@@ -14,7 +14,7 @@ extern b8 create_game(Game* outGame);
 ******************************/
 int main(void){
 
-    initialize_memory();
+    
 
 
     Game gameInstance;
@@ -41,7 +41,7 @@ int main(void){
 
     }
     
-    shutdown_memory();
+    
     
     return 0;
 }

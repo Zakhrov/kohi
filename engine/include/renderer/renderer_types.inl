@@ -14,7 +14,7 @@ typedef struct RenderPacket{
 typedef struct RendererBackend{
     struct PlatformState* platformState;
     u64 frameNumber;
-    b8(*initialize)(struct RendererBackend* backend, const char* applicationName, struct PlatformState* platformState);
+    b8(*initialize)(struct RendererBackend* backend, const char* applicationName);
     void(*shutdown)(struct RendererBackend* backend);
     void(*resized)(struct RendererBackend* backend, u16 width, u16 height);
     b8(*begin_frame)(struct RendererBackend* backend, f64 deltaTime);

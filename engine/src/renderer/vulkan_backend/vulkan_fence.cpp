@@ -16,19 +16,19 @@ void vulkan_fence_destroy(VulkanContext* context, VulkanFence* fence,int deviceI
 
     if(fence->handle!=VK_NULL_HANDLE){
         vkDestroyFence(context->device.logicalDevices[deviceIndex],fence->handle,context->allocator);
-        KINFO("Destroy fence for %s",context->device.properties[deviceIndex].deviceName);
-        fence->isSignaled = FALSE;
+        // KINFO("Destroy fence for %s",context->device.properties[deviceIndex].deviceName);
+        fence->isSignaled = false;
     }
 
 }
 
 b8 vulkan_fence_wait(VulkanContext* context, VulkanFence* fence, u64 timeoutNs,int deviceIndex){
     if(!fence->isSignaled){
-        VkResult result = vkWaitForFences(context->device.logicalDevices[deviceIndex],1,&fence->handle,TRUE,timeoutNs);
+        VkResult result = vkWaitForFences(context->device.logicalDevices[deviceIndex],1,&fence->handle,true,timeoutNs);
         switch(result){
             case VK_SUCCESS:
-                fence->isSignaled = TRUE;
-                return TRUE;
+                fence->isSignaled = true;
+                return true;
              case VK_TIMEOUT:
                 KWARN("vk_fence_wait - Timed out");
                 break;
@@ -49,15 +49,15 @@ b8 vulkan_fence_wait(VulkanContext* context, VulkanFence* fence, u64 timeoutNs,i
         
     }
     else{
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 void vulkan_fence_reset(VulkanContext* context, VulkanFence* fence, int deviceIndex){
     if(fence->isSignaled){
         // KDEBUG("Resetting fence");
         VK_CHECK(vkResetFences(context->device.logicalDevices[deviceIndex],1,&fence->handle));
-        fence->isSignaled = FALSE;
+        fence->isSignaled = false;
     }
 }

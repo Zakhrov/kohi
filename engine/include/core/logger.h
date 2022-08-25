@@ -27,8 +27,17 @@ typedef enum LogLevel {
 extern "C"
 {
 #endif
-b8 initialize_logging();
-void shutdown_logging();
+
+/**
+ * @brief Initializes logging system. Call twice; once with state = 0 to get required memory size,
+ * then a second time passing allocated memory to state.
+ * 
+ * @param memoryRequirement A pointer to hold the required memory size of internal state.
+ * @param state 0 if just requesting memory requirement, otherwise allocated block of memory.
+ * @return b8 True on success; otherwise false.
+ */
+b8 initialize_logging(u64* memoryRequirement, void* state);
+void shutdown_logging(u64* memoryRequirement, void* state);
 
 KAPI void log_output(LogLevel level, const char* message, ...);
 

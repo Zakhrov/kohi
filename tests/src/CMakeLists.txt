@@ -1,0 +1,1 @@
+target_sources(${PROJECT_NAME} PRIVATE main.c test_manager.c memory/linear_allocator_test.c)
