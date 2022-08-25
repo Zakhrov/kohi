@@ -34,7 +34,7 @@ b8 renderer_system_initialize(u64* memoryRequiremnt, void* state, void* platform
 }
 void renderer_shutdown(){
     statePtr->backend.shutdown(&statePtr->backend);
-    kfree(&statePtr->backend,sizeof(RendererBackend),MEMORY_TAG_RENDERER);
+    // kfree(&statePtr->backend,sizeof(RendererBackend),MEMORY_TAG_RENDERER);
 
 }
 void renderer_on_resized(u16 width, u16 height){

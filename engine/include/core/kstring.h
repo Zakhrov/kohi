@@ -1,5 +1,10 @@
 #pragma once
 #include "../defines.h"
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 
 /**
  * @brief Performs string formatting to dest given format string and parameters.
@@ -18,3 +23,8 @@ KAPI i32 string_format(char* dest, const char* format, ...);
  * @returns The size of the data written.
  */
 KAPI i32 string_format_v(char* dest, const char* format, void* va_list);
+
+#ifdef __cplusplus
+}
+#endif
+

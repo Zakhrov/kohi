@@ -122,6 +122,26 @@ typedef struct VulkanFence{
   b8 isSignaled;
 }VulkanFence;
 
+typedef struct VulkanShaderStage{
+
+  VkShaderModuleCreateInfo createInfo;
+  VkShaderModule handle;
+  VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
+
+}VulkanShaderStage;
+
+typedef struct VulkanPipeline{
+  VkPipeline handle;
+  VkPipelineLayout pipelineLayout;
+}VulkanPipeline;
+
+#define OBJECT_SHADER_STAGE_COUNT 2
+typedef struct VulkanObjectShader{
+  VulkanShaderStage stages[OBJECT_SHADER_STAGE_COUNT];
+  VulkanPipeline pipeline;
+
+}VulkanObjectShader;
+
 
 
 typedef struct VulkanContext {
@@ -147,6 +167,7 @@ typedef struct VulkanContext {
     std::vector<u32> imageIndex;
     std::vector<u32> currentFrame;
     std::vector<b8> recreatingSwapchain;
+    std::vector<VulkanObjectShader> objectShaders;
 
 
     VkResult swapchainResult;
@@ -155,6 +176,9 @@ typedef struct VulkanContext {
   VkDebugUtilsMessengerEXT debugMessenger;
 #endif
 } VulkanContext;
+
+
+
 
 #define VK_CHECK(expr){ KASSERT(expr == VK_SUCCESS);}
 

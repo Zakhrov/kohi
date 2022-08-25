@@ -12,6 +12,7 @@
 #include "renderer/vulkan_backend/vulkan_framebuffer.h"
 #include "renderer/vulkan_backend/vulkan_fence.h"
 #include "renderer/vulkan_backend/vulkan_utils.h"
+#include "renderer/vulkan_backend/shaders/vulkan_object_shader.h"
 static VulkanContext context{};
 static u64 cachedFramebufferWidth = 0;
 static u64 cachedFramebufferHeight = 0;
@@ -138,6 +139,7 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
     context.currentFrame = std::vector<u32>(context.device.deviceCount);
     context.imageIndex = std::vector<u32>(context.device.deviceCount);
     context.recreatingSwapchain = std::vector<b8>(context.device.deviceCount);
+    context.objectShaders = std::vector<VulkanObjectShader>(context.device.deviceCount);
     for (int deviceIndex = 0; deviceIndex < context.device.deviceCount; deviceIndex++)
     {
         context.framebufferWidth[deviceIndex] = cachedFramebufferWidth != 0 ? cachedFramebufferWidth : 1280;
@@ -151,6 +153,13 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
         context.swapchains[deviceIndex].framebuffers = std::vector<VulkanFramebuffer>(context.swapchains[deviceIndex].imageCount);
         regenerate_framebuffers(backend, &context.swapchains[deviceIndex], &context.mainRenderPasses[deviceIndex], deviceIndex);
         create_command_buffers(backend, deviceIndex);
+
+
+        if (!vulkan_object_shader_create(&context, &context.objectShaders[deviceIndex],deviceIndex)) {
+            KERROR("Error loading built-in basic_lighting shader.");
+            return false;
+        }
+
         // Vulkan sync objects
         context.imageAvalableSemaphores[deviceIndex] = std::vector<VkSemaphore>(context.swapchains[deviceIndex].imageCount);
         context.queueCompleteSemaphores[deviceIndex] = std::vector<VkSemaphore>(context.swapchains[deviceIndex].imageCount);
@@ -187,6 +196,8 @@ void vulkan_renderer_backend_shutdown(RendererBackend *backend)
     for (int deviceIndex = 0; deviceIndex < context.device.deviceCount; deviceIndex++)
     {
         vkDeviceWaitIdle(context.device.logicalDevices[deviceIndex]);
+        // destroy shader modules
+        vulkan_object_shader_destroy(&context,&context.objectShaders[deviceIndex],deviceIndex);
 
         // destroy sync objects
         for (int i = 0; i < context.swapchains[deviceIndex].imageCount; i++)
@@ -224,6 +235,7 @@ void vulkan_renderer_backend_shutdown(RendererBackend *backend)
             vulkan_framebuffer_destroy(&context, &context.swapchains[deviceIndex].framebuffers[i], deviceIndex);
             // KINFO("Destroyed framebuffer %i for device %s ", i, context.device.properties[deviceIndex].deviceName);
         }
+        
 
         vulkan_renderpass_destroy(&context, &context.mainRenderPasses[deviceIndex], deviceIndex);
         vulkan_swapchain_destroy(&context, &context.swapchains[deviceIndex],deviceIndex);

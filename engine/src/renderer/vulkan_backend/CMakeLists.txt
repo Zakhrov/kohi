@@ -10,8 +10,10 @@ vulkan_renderpass.cpp
 vulkan_command_buffer.cpp
 vulkan_framebuffer.cpp
 vulkan_fence.cpp
-vulkan_utils.cpp)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-target_sources(${PROJECT_NAME} PRIVATE vulkan_platform_linux.cpp)
-endif()
+vulkan_platform_linux.cpp
+vulkan_utils.cpp
+vulkan_shader_utils.cpp
+shaders/vulkan_object_shader.cpp
+)
+
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC vulkan glm::glm)
