@@ -13,9 +13,14 @@
 #include "renderer/vulkan_backend/vulkan_fence.h"
 #include "renderer/vulkan_backend/vulkan_utils.h"
 #include "renderer/vulkan_backend/shaders/vulkan_object_shader.h"
+#include "renderer/vulkan_backend/vulkan_buffer.h"
+#include "math/math_types.h"
+
 static VulkanContext context{};
 static u64 cachedFramebufferWidth = 0;
 static u64 cachedFramebufferHeight = 0;
+
+
 
 VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -24,6 +29,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
     void *userData);
 
 i32 find_memory_index(u64 memoryTypeBits, VkMemoryPropertyFlags memoryFlags, int deviceIndex);
+
+b8 create_buffers(VulkanContext* context,int deviceIndex);
 
 void create_command_buffers(RendererBackend *backend, int deviceIndex);
 void regenerate_framebuffers(RendererBackend *backend, VulkanSwapchain *swapchain, VulkanRenderpass *renderpass, int deviceIndex);
@@ -140,6 +147,10 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
     context.imageIndex = std::vector<u32>(context.device.deviceCount);
     context.recreatingSwapchain = std::vector<b8>(context.device.deviceCount);
     context.objectShaders = std::vector<VulkanObjectShader>(context.device.deviceCount);
+    context.vertexBuffers = std::vector<VulkanBuffer>(context.device.deviceCount);
+    context.indexBuffers = std::vector<VulkanBuffer>(context.device.deviceCount);
+    context.geometryVertexOffset = std::vector<u32>(context.device.deviceCount);
+    context.geometryIndexOffset = std::vector<u32>(context.device.deviceCount);
     for (int deviceIndex = 0; deviceIndex < context.device.deviceCount; deviceIndex++)
     {
         context.framebufferWidth[deviceIndex] = cachedFramebufferWidth != 0 ? cachedFramebufferWidth : 1280;
@@ -155,10 +166,7 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
         create_command_buffers(backend, deviceIndex);
 
 
-        if (!vulkan_object_shader_create(&context, &context.objectShaders[deviceIndex],deviceIndex)) {
-            KERROR("Error loading built-in basic_lighting shader.");
-            return false;
-        }
+        
 
         // Vulkan sync objects
         context.imageAvalableSemaphores[deviceIndex] = std::vector<VkSemaphore>(context.swapchains[deviceIndex].imageCount);
@@ -183,6 +191,12 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
         {
             context.imagesInFlight[deviceIndex][i] = nullptr;
         }
+
+        if (!vulkan_object_shader_create(&context, &context.objectShaders[deviceIndex],deviceIndex)) {
+            KERROR("Error loading built-in basic_lighting shader.");
+            return false;
+        }
+        create_buffers(&context,deviceIndex);
     }
 
     KINFO("Vulkan backend initialized successfully");
@@ -196,6 +210,8 @@ void vulkan_renderer_backend_shutdown(RendererBackend *backend)
     for (int deviceIndex = 0; deviceIndex < context.device.deviceCount; deviceIndex++)
     {
         vkDeviceWaitIdle(context.device.logicalDevices[deviceIndex]);
+        vulkan_buffer_destroy(&context,&context.vertexBuffers[deviceIndex],deviceIndex);
+        vulkan_buffer_destroy(&context,&context.indexBuffers[deviceIndex],deviceIndex);
         // destroy shader modules
         vulkan_object_shader_destroy(&context,&context.objectShaders[deviceIndex],deviceIndex);
 
@@ -564,4 +580,38 @@ b8 recreate_swapchain(RendererBackend *backend, int deviceIndex)
     context.recreatingSwapchain[deviceIndex] = false;
 
     return true;
+}
+
+b8 create_buffers(VulkanContext* context, int deviceIndex){
+
+    VkMemoryPropertyFlagBits memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        const u64 vertex_buffer_size = sizeof(Vertex3D) * 1024 * 1024;
+    if (!vulkan_buffer_create(
+            context,
+            vertex_buffer_size,
+            (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+            memory_property_flags,
+            true,
+            &context->vertexBuffers[deviceIndex],deviceIndex)) {
+        KERROR("Error creating vertex buffer.");
+        return false;
+    }
+    context->geometryVertexOffset[deviceIndex] = 0;
+
+    const u64 index_buffer_size = sizeof(u32) * 1024 * 1024;
+    if (!vulkan_buffer_create(
+            context,
+            index_buffer_size,
+            (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+            memory_property_flags,
+            true,
+            &context->indexBuffers[deviceIndex],deviceIndex)) {
+        KERROR("Error creating vertex buffer.");
+        return false;
+    }
+    context->geometryIndexOffset[deviceIndex] = 0;
+
+    return true;
+
+
 }

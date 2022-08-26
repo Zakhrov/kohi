@@ -13,6 +13,8 @@ vulkan_fence.cpp
 vulkan_platform_linux.cpp
 vulkan_utils.cpp
 vulkan_shader_utils.cpp
+vulkan_pipeline.cpp
+vulkan_buffer.cpp
 shaders/vulkan_object_shader.cpp
 )
 

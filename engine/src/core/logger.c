@@ -1,15 +1,28 @@
 #include "core/logger.h"
 #include "kohi_asserts.h"
-#include <stdio.h>
 #include <stdarg.h>
+#include "core/kstring.h"
+#include "memory/kmemory.h"
+#include "platform/filesystem.h"
 #include <string.h>
 
-
 typedef struct LoggerSystemState {
-    b8 initalized;
+    FileHandle logFileHandle;
 } LoggerSystemState;
 
 static LoggerSystemState* statePtr;
+
+void append_to_log_file(const char* message) {
+    if (statePtr && statePtr->logFileHandle.isValid) {
+        // Since the message already contains a '\n', just write the bytes directly.
+        u64 length = strlen(message);
+        u64 written = 0;
+        if (!filesystem_write(&statePtr->logFileHandle, length, message, &written)) {
+            platform_console_write_error("ERROR writing to console.log.", LOG_LEVEL_ERROR);
+        }
+    }
+}
+
 
 b8 initialize_logging(u64* memoryRequirement, void* state ){
     *memoryRequirement = sizeof(LoggerSystemState);
@@ -17,7 +30,10 @@ b8 initialize_logging(u64* memoryRequirement, void* state ){
         return true;
     }
     statePtr = state;
-    statePtr->initalized = true;
+    if(!filesystem_open("kohi.log",FILE_MODE_WRITE,false,&statePtr->logFileHandle)){
+        platform_console_write_error("Unable to open log file for writing",LOG_LEVEL_ERROR);
+        return false;
+    }
 
      // TODO: create log file.
      return true;
@@ -34,6 +50,9 @@ void shutdown_logging(u64* memoryRequirement, void* state){
 }
 
 void log_output(LogLevel level, const char* message, ...){
+    // TODO: These string operations are all pretty slow. This needs to be
+    // moved to another thread eventually, along with the file writes, to
+    // avoid slowing things down while the engine is trying to run.
      const char* level_strings[6] = {"[FATAL]: ", "[ERROR]: ", "[WARN]:  ", "[INFO]:  ", "[DEBUG]: ", "[TRACE]: "};
      b8 is_error = level < LOG_LEVEL_WARN;
 
@@ -41,7 +60,7 @@ void log_output(LogLevel level, const char* message, ...){
     // Technically imposes a 32k character limit on a single log entry, but...
     // DON'T DO THAT!
     char out_message[32000];
-    memset(out_message, 0, sizeof(out_message));
+    kzero_memory(out_message, sizeof(out_message));
 
     // Format original message.
     // NOTE: Oddly enough, MS's headers override the GCC/Clang va_list type with a "typedef char* va_list" in some
@@ -49,19 +68,22 @@ void log_output(LogLevel level, const char* message, ...){
     // which is the type GCC/Clang's va_start expects.
     __builtin_va_list arg_ptr;
     va_start(arg_ptr, message);
-    vsnprintf(out_message, 32000, message, arg_ptr);
+    string_format_v(out_message, message, arg_ptr);
     va_end(arg_ptr);
 
-    char out_message2[32000];
-    sprintf(out_message2, "%s%s\n", level_strings[level], out_message);
+     // Prepend log level to message.
+    string_format(out_message, "%s%s\n", level_strings[level], out_message);
 
     
     // Platform-specific output.
     if (is_error) {
-        platform_console_write_error(out_message2, level);
+        platform_console_write_error(out_message, level);
     } else {
-        platform_console_write(out_message2, level);
+        platform_console_write(out_message, level);
     }
+
+     // Queue a copy to be written to the log file.
+    append_to_log_file(out_message);
 
 }
 void report_assertion_failure(const char* expression, const char* message, const char* file, i32 line) {

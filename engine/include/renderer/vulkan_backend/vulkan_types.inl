@@ -13,6 +13,20 @@
 
 
 
+typedef struct VulkanBuffer{
+ 
+    u64 totalSize;
+    VkBuffer handle;
+    VkBufferUsageFlagBits usage;
+    b8 isLocked;
+    VkDeviceMemory memory;
+    i32 memoryIndex;
+    u32 memoryPropertyFlags;
+
+
+
+}VulkanBuffer;
+
 typedef struct VulkanSwapChainSupportInfo{
    VkSurfaceCapabilitiesKHR capabilities;
     u32 formatCount;
@@ -20,6 +34,8 @@ typedef struct VulkanSwapChainSupportInfo{
     u32 presentModeCount;
     VkPresentModeKHR* presentModes;
 }VulkanSwapChainSupportInfo;
+
+
 
 
 typedef struct VulkanDevice{
@@ -168,6 +184,10 @@ typedef struct VulkanContext {
     std::vector<u32> currentFrame;
     std::vector<b8> recreatingSwapchain;
     std::vector<VulkanObjectShader> objectShaders;
+    std::vector<VulkanBuffer> vertexBuffers;
+    std::vector<VulkanBuffer> indexBuffers;
+    std::vector<u32> geometryVertexOffset;
+    std::vector<u32> geometryIndexOffset;
 
 
     VkResult swapchainResult;
