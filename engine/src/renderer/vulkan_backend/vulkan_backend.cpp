@@ -36,6 +36,22 @@ void create_command_buffers(RendererBackend *backend, int deviceIndex);
 void regenerate_framebuffers(RendererBackend *backend, VulkanSwapchain *swapchain, VulkanRenderpass *renderpass, int deviceIndex);
 b8 recreate_swapchain(RendererBackend *backend, int deviceIndex);
 
+void upload_data_range(VulkanContext* context, VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 offset, u64 size, void* data,int deviceIndex) {
+    // Create a host-visible staging buffer to upload to. Mark it as the source of the transfer.
+    VkBufferUsageFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    VulkanBuffer staging;
+    vulkan_buffer_create(context, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, flags, true, &staging,deviceIndex);
+
+    // Load the data into the staging buffer.
+    vulkan_buffer_load_data(context, &staging, 0, size, 0, data,deviceIndex);
+
+    // Perform the copy from staging to the device local buffer.
+    vulkan_buffer_copy_to(context, pool, fence, queue, staging.handle, 0, buffer->handle, offset, size,deviceIndex);
+
+    // Clean up the staging buffer.
+    vulkan_buffer_destroy(context, &staging,deviceIndex);
+}
+
 b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *applicationName)
 {
     application_get_framebuffer_size(&cachedFramebufferWidth, &cachedFramebufferHeight);
@@ -197,7 +213,33 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
             return false;
         }
         create_buffers(&context,deviceIndex);
+
+    // TODO: temporary test code
+    const u32 vert_count = 4;
+    Vertex3D verts[vert_count];
+    kzero_memory(verts, sizeof(Vertex3D) * vert_count);
+
+    verts[0].position.x = 0.0;
+    verts[0].position.y = -0.5;
+
+    verts[1].position.x = 0.5;
+    verts[1].position.y = 0.5;
+
+    verts[2].position.x = 0;
+    verts[2].position.y = 0.5;
+
+    verts[3].position.x = 0.5;
+    verts[3].position.y = -0.5;
+
+    const u32 index_count = 6;
+    u32 indices[index_count] = {0, 1, 2, 0, 3, 1};
+
+    upload_data_range(&context, context.device.graphicsCommandPools[deviceIndex], 0, context.device.graphicsQueues[deviceIndex], &context.vertexBuffers[deviceIndex], 0, sizeof(Vertex3D) * vert_count, verts,deviceIndex);
+    upload_data_range(&context, context.device.graphicsCommandPools[deviceIndex], 0, context.device.graphicsQueues[deviceIndex], &context.indexBuffers[deviceIndex], 0, sizeof(u32) * index_count, indices,deviceIndex);
+    // TODO: end temp code
     }
+
+    
 
     KINFO("Vulkan backend initialized successfully");
     return true;
@@ -264,7 +306,7 @@ void vulkan_renderer_backend_shutdown(RendererBackend *backend)
     vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
 
 #ifndef NDEBUG
-    if (context.debugMessenger != nullptr)
+    if (context.debugMessenger != VK_NULL_HANDLE)
     {
         KDEBUG("Destroying Vulkan debugger...");
         PFN_vkDestroyDebugUtilsMessengerEXT func =
@@ -336,7 +378,7 @@ b8 vulkan_renderer_backend_begin_frame(RendererBackend *backend, f64 deltaTime)
     // KDEBUG(" ImageIndex >>>> %i on %s",context.imageIndex[deviceIndex],context.device.properties[deviceIndex].deviceName);
     // KDEBUG(" CurrentFrame >>>> %i on %s",context.currentFrame[deviceIndex],context.device.properties[deviceIndex].deviceName);
     // Begin recording commands.
-    VulkanCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.currentFrame[deviceIndex]];
+    VulkanCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.imageIndex[deviceIndex]];
     vulkan_command_buffer_reset(commandBuffer);
     vulkan_command_buffer_begin(commandBuffer, false, false, false);
     // Dynamic state
@@ -363,7 +405,22 @@ b8 vulkan_renderer_backend_begin_frame(RendererBackend *backend, f64 deltaTime)
     vulkan_renderpass_begin(
         commandBuffer,
         &context.mainRenderPasses[deviceIndex],
-        context.swapchains[deviceIndex].framebuffers[context.currentFrame[deviceIndex]].handle);
+        context.swapchains[deviceIndex].framebuffers[context.imageIndex[deviceIndex]].handle);
+
+    // TODO: temporary test code
+    
+    vulkan_object_shader_use(&context, &context.objectShaders[deviceIndex],deviceIndex);
+
+    // Bind vertex buffer at offset.
+    VkDeviceSize offsets[1] = {0};
+    vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1, &context.vertexBuffers[deviceIndex].handle, (VkDeviceSize*)offsets);
+
+    // Bind index buffer at offset.
+    vkCmdBindIndexBuffer(commandBuffer->handle, context.indexBuffers[deviceIndex].handle, 0, VK_INDEX_TYPE_UINT32);
+
+    // Issue the draw.
+    vkCmdDrawIndexed(commandBuffer->handle, 6, 1, 0, 0, 0);
+    // TODO: end temporary test code
     
     return true;
 
@@ -374,7 +431,7 @@ b8 vulkan_renderer_backend_end_frame(RendererBackend *backend, f64 deltaTime)
 {
     int deviceIndex = backend->frameNumber % context.device.deviceCount;
 
-    VulkanCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.currentFrame[deviceIndex]];
+    VulkanCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.imageIndex[deviceIndex]];
     vulkan_renderpass_end(commandBuffer,&context.mainRenderPasses[deviceIndex]);
     vulkan_command_buffer_end(commandBuffer);
      // Make sure the previous frame is not using this image (i.e. its fence is being waited on)

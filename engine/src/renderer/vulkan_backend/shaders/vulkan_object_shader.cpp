@@ -54,6 +54,7 @@ b8 vulkan_object_shader_create(VulkanContext* context, VulkanObjectShader* shade
     }
 
     // TODO: Desciptor set layouts.
+    
 
     // Stages
     // NOTE: Should match the number of shader->stages.
@@ -83,5 +84,8 @@ void vulkan_object_shader_destroy(VulkanContext* context, VulkanObjectShader* sh
 }
 
 void vulkan_object_shader_use(VulkanContext* context, VulkanObjectShader* shader,int deviceIndex){
+
+    u32 imageIndex = context->imageIndex[deviceIndex];
+    vulkan_pipeline_bind(&context->graphicsCommandBuffers[deviceIndex][imageIndex],VK_PIPELINE_BIND_POINT_GRAPHICS,&shader->pipeline,deviceIndex);
     
 }

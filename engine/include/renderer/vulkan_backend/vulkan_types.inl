@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <vector>
-
+#include "../renderer_types.inl"
 
 
 
@@ -155,6 +155,10 @@ typedef struct VulkanPipeline{
 typedef struct VulkanObjectShader{
   VulkanShaderStage stages[OBJECT_SHADER_STAGE_COUNT];
   VulkanPipeline pipeline;
+  GlobalUniformObject globalUBO;
+  VkDescriptorPool descriptorPool;
+  VkDescriptorSet descriptorSets[3];
+  VkDescriptorSetLayout descriptorSetLayout;
 
 }VulkanObjectShader;
 
