@@ -218,18 +218,19 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
     const u32 vert_count = 4;
     Vertex3D verts[vert_count];
     kzero_memory(verts, sizeof(Vertex3D) * vert_count);
+    const f32 scaleFactor = 10.0f;
 
-    verts[0].position.x = 0.0;
-    verts[0].position.y = -0.5;
+    verts[0].position.x = -0.5 * scaleFactor;
+    verts[0].position.y = -0.5 * scaleFactor;
 
-    verts[1].position.x = 0.5;
-    verts[1].position.y = 0.5;
+    verts[1].position.x = 0.5 * scaleFactor;
+    verts[1].position.y = 0.5 * scaleFactor;
 
-    verts[2].position.x = 0;
-    verts[2].position.y = 0.5;
+    verts[2].position.x = -0.5 * scaleFactor;
+    verts[2].position.y = 0.5 * scaleFactor;
 
-    verts[3].position.x = 0.5;
-    verts[3].position.y = -0.5;
+    verts[3].position.x = 0.5 * scaleFactor;
+    verts[3].position.y = -0.5 * scaleFactor;
 
     const u32 index_count = 6;
     u32 indices[index_count] = {0, 1, 2, 0, 3, 1};
@@ -407,26 +408,54 @@ b8 vulkan_renderer_backend_begin_frame(RendererBackend *backend, f64 deltaTime)
         &context.mainRenderPasses[deviceIndex],
         context.swapchains[deviceIndex].framebuffers[context.imageIndex[deviceIndex]].handle);
 
-    // TODO: temporary test code
-    
-    vulkan_object_shader_use(&context, &context.objectShaders[deviceIndex],deviceIndex);
-
-    // Bind vertex buffer at offset.
-    VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1, &context.vertexBuffers[deviceIndex].handle, (VkDeviceSize*)offsets);
-
-    // Bind index buffer at offset.
-    vkCmdBindIndexBuffer(commandBuffer->handle, context.indexBuffers[deviceIndex].handle, 0, VK_INDEX_TYPE_UINT32);
-
-    // Issue the draw.
-    vkCmdDrawIndexed(commandBuffer->handle, 6, 1, 0, 0, 0);
-    // TODO: end temporary test code
     
     return true;
 
     
     
 }
+
+
+void vulkan_renderer_backend_update_global_state(RendererBackend* backend,mat4 projection,mat4 view, vec3 viewPosition,vec4 ambientColor,i32 mode){
+    int deviceIndex = backend->frameNumber % context.device.deviceCount;
+    // KDEBUG("Updating Vulkan UBO state for frame number %d at device index %d ",backend->frameNumber,deviceIndex);
+    VkCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.imageIndex[deviceIndex]].handle;
+    vulkan_object_shader_use(&context,&context.objectShaders[deviceIndex],deviceIndex);
+    context.objectShaders[deviceIndex].globalUBO.projection = projection;
+    context.objectShaders[deviceIndex].globalUBO.view = view;
+    // TODO: Other UBO properties
+    vulkan_object_shader_update_global_state(&context,&context.objectShaders[deviceIndex],deviceIndex);
+
+    
+
+   
+    
+    
+
+}
+
+void vulkan_renderer_backend_update_object(RendererBackend* backend, mat4 model){
+    int deviceIndex = backend->frameNumber % context.device.deviceCount;
+    VkCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.imageIndex[deviceIndex]].handle;
+    vulkan_object_shader_update_object(&context,&context.objectShaders[deviceIndex],model,deviceIndex);
+     
+     // TODO: Temp code
+    vulkan_object_shader_use(&context,&context.objectShaders[deviceIndex],deviceIndex);
+     // Bind vertex buffer at offset.
+    VkDeviceSize offsets[1] = {0};
+    vkCmdBindVertexBuffers(*commandBuffer, 0, 1, &context.vertexBuffers[deviceIndex].handle, (VkDeviceSize*)offsets);
+
+    // Bind index buffer at offset.
+    vkCmdBindIndexBuffer(*commandBuffer, context.indexBuffers[deviceIndex].handle, 0, VK_INDEX_TYPE_UINT32);
+
+    // Issue the draw.
+    vkCmdDrawIndexed(*commandBuffer, 6, 1, 0, 0, 0);
+
+    // TODO: End temp Code
+
+
+}
+
 b8 vulkan_renderer_backend_end_frame(RendererBackend *backend, f64 deltaTime)
 {
     int deviceIndex = backend->frameNumber % context.device.deviceCount;

@@ -9,7 +9,7 @@
 extern b8 create_game(Game* outGame);
 
 /****************************
-    New Game ENtry point 
+    New Game Entry point 
 
 ******************************/
 int main(void){

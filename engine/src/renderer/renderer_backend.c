@@ -6,8 +6,11 @@ b8 renderer_backend_create(RendererBackendType rendererBackendType,RendererBacke
         backend->initialize = vulkan_renderer_backend_initialize;
         backend->shutdown = vulkan_renderer_backend_shutdown;
         backend->begin_frame = vulkan_renderer_backend_begin_frame;
+        backend->update_global_state = vulkan_renderer_backend_update_global_state;
+        backend->update_object = vulkan_renderer_backend_update_object;
         backend->end_frame = vulkan_renderer_backend_end_frame;
         backend->resized = vulkan_renderer_backend_on_resized;
+        
 
         
 
@@ -20,8 +23,11 @@ b8 renderer_backend_create(RendererBackendType rendererBackendType,RendererBacke
 void renderer_backend_destroy(RendererBackend* backend){
     backend->initialize = 0;
     backend->begin_frame = 0;
+    backend->update_global_state = 0;
+    backend->update_object = 0;
     backend->end_frame = 0;
     backend->resized = 0;
     backend->shutdown = 0;
+    
 
 }

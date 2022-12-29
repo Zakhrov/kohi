@@ -94,8 +94,16 @@ VkVertexInputAttributeDescription* attributes, u32 descriptorSetLayoutCount, VkD
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-
+    // Pipeline layout
     VkPipelineLayoutCreateInfo layoutCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    // Push constants
+    VkPushConstantRange pushConstantRange;
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.offset = sizeof(mat4) * 0;
+    pushConstantRange.size = sizeof(mat4) * 2;
+    layoutCreateInfo.pPushConstantRanges = &pushConstantRange;
+    layoutCreateInfo.pushConstantRangeCount = 1;
+    // Set Descriptor set layouts in pipeline
     layoutCreateInfo.pSetLayouts = descriptorSetLayouts;
     layoutCreateInfo.setLayoutCount = descriptorSetLayoutCount;
     VK_CHECK(vkCreatePipelineLayout(context->device.logicalDevices[deviceIndex],&layoutCreateInfo,context->allocator,&outPipeline->pipelineLayout));

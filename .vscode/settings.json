@@ -58,6 +58,8 @@
         "thread": "cpp",
         "typeinfo": "cpp",
         "kohi_asserts.h": "c",
-        "xcb.h": "c"
+        "xcb.h": "c",
+        "renderer_backend.h": "c",
+        "renderer_types.inl": "c"
     }
 }

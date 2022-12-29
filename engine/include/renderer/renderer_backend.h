@@ -1,6 +1,5 @@
 #pragma once
 #include "renderer_types.inl"
-
 struct PlatformState;
 
 #ifdef __cplusplus

@@ -157,8 +157,10 @@ typedef struct VulkanObjectShader{
   VulkanPipeline pipeline;
   GlobalUniformObject globalUBO;
   VkDescriptorPool descriptorPool;
+  // 3 descriptor sets for triple buffering
   VkDescriptorSet descriptorSets[3];
   VkDescriptorSetLayout descriptorSetLayout;
+  VulkanBuffer globalUniformBuffer;
 
 }VulkanObjectShader;
 

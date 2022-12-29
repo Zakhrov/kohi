@@ -240,7 +240,7 @@ b8 application_on_key(u16 code, void* sender, void* listener_inst, EventContext 
             // Example on checking for a key
             KDEBUG("Explicit - A key pressed!");
         } else {
-            KDEBUG("'%c' key pressed in window.", key_code);
+            KDEBUG("'%d' key pressed in window.", key_code);
         }
     } else if (code == EVENT_CODE_KEY_RELEASED) {
         u16 key_code = context.data.u16[0];
@@ -248,7 +248,7 @@ b8 application_on_key(u16 code, void* sender, void* listener_inst, EventContext 
             // Example on checking for a key
             KDEBUG("Explicit - B key released!");
         } else {
-            KDEBUG("'%c' key released in window.", key_code);
+            KDEBUG("'%d' key released in window.", key_code);
         }
     }
     return false;
