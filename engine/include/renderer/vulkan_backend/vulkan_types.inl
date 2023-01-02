@@ -17,7 +17,7 @@ typedef struct VulkanBuffer{
  
     u64 totalSize;
     VkBuffer handle;
-    VkBufferUsageFlagBits usage;
+    VkBufferUsageFlags usage;
     b8 isLocked;
     VkDeviceMemory memory;
     i32 memoryIndex;
@@ -152,7 +152,24 @@ typedef struct VulkanPipeline{
 }VulkanPipeline;
 
 #define OBJECT_SHADER_STAGE_COUNT 2
-typedef struct VulkanObjectShader{
+
+// shader descriptors per object
+#define VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT 2
+typedef struct VulkanDescriptorState{
+  // one per frame
+  u32 generations[3];
+}VulkanDescriptorState;
+typedef struct VulkanMaterialShaderObjectState {
+  // descriptor sets per frame
+  VkDescriptorSet descriptorSets[3];
+  // per descriptor
+  VulkanDescriptorState descriptorStates[VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT];
+
+}VulkanMaterialShaderObjectState;
+// max number of objects
+#define VULKAN_OBJECT_MAX_OBJECT_COUNT 1024
+
+typedef struct VulkanMaterialShader{
   VulkanShaderStage stages[OBJECT_SHADER_STAGE_COUNT];
   VulkanPipeline pipeline;
   GlobalUniformObject globalUBO;
@@ -162,7 +179,20 @@ typedef struct VulkanObjectShader{
   VkDescriptorSetLayout descriptorSetLayout;
   VulkanBuffer globalUniformBuffer;
 
-}VulkanObjectShader;
+  VkDescriptorPool objectDescriptorPool;
+    VkDescriptorSetLayout objectDescriptorSetLayout;
+    // Object uniform buffers.
+    VulkanBuffer objectUniformBuffer;
+    // TODO: manage a free list of some kind here instead.
+    u32 objectUniformBufferIndex;
+
+    // TODO: make dynamic
+    VulkanMaterialShaderObjectState objectStates[VULKAN_OBJECT_MAX_OBJECT_COUNT];
+
+    // Pointers to a defalt Texture
+    Texture* defaultDiffuse;
+
+}VulkanMaterialShader;
 
 
 
@@ -171,6 +201,7 @@ typedef struct VulkanContext {
     VkAllocationCallbacks* allocator;
     VulkanDevice device;
     VkSurfaceKHR surface;
+    f64 frameDeltaTime;
 
 
     std::vector<u64> framebufferWidth;
@@ -189,7 +220,7 @@ typedef struct VulkanContext {
     std::vector<u32> imageIndex;
     std::vector<u32> currentFrame;
     std::vector<b8> recreatingSwapchain;
-    std::vector<VulkanObjectShader> objectShaders;
+    std::vector<VulkanMaterialShader> materialShaders;
     std::vector<VulkanBuffer> vertexBuffers;
     std::vector<VulkanBuffer> indexBuffers;
     std::vector<u32> geometryVertexOffset;
@@ -202,6 +233,12 @@ typedef struct VulkanContext {
   VkDebugUtilsMessengerEXT debugMessenger;
 #endif
 } VulkanContext;
+
+typedef struct VulkanTextureData{
+  std::vector<VulkanImage> images;
+  std::vector<VkSampler> samplers;
+} VulkanTextureData;
+
 
 
 

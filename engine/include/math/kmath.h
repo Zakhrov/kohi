@@ -4,6 +4,11 @@
 #include "math_types.h"
 #include "../memory/kmemory.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 
 #define K_PI 3.14159265358979323846f
 #define K_PI_2 2.0f * K_PI
@@ -1296,3 +1301,7 @@ KINLINE f32 deg_to_rad(f32 degrees) {
 KINLINE f32 rad_to_deg(f32 radians) {
     return radians * K_RAD2DEG_MULTIPLIER;
 }
+
+#ifdef __cplusplus
+}
+#endif

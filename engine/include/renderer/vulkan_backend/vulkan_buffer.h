@@ -6,8 +6,8 @@
 b8 vulkan_buffer_create(
     VulkanContext* context,
     u64 size,
-    VkBufferUsageFlagBits usage,
-    u32 memoryPropertyFlags,
+    VkBufferUsageFlags usage,
+    VkMemoryPropertyFlags memoryPropertyFlags,
     b8 bindOnCreate,
     VulkanBuffer* buffer, int deviceIndex);
 

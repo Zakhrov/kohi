@@ -2,10 +2,12 @@
 #include <core/logger.h>
 #include <memory/kmemory.h>
 #include <core/input.h>
+#include <math/kmath.h>
+#include <core/event.h>
 
 // HACK: Should be imported outside the engine!!!!
 #include <renderer/renderer_frontend.h>
-#include <math/kmath.h>
+
 
 void recalculate_camera_view(GameState* state){
     if(state->cameraViewDirty){
@@ -66,6 +68,15 @@ b8 game_update(Game* gameInstance,f32 deltaTime){
     if (input_is_key_up('M') && input_was_key_down('M')) {
         KDEBUG("Allocations: %llu (%llu this frame)", alloc_count, alloc_count - prev_alloc_count);
     }
+        // TODO: temp
+    if (input_is_key_up(KEY_T) && input_was_key_down(KEY_T)) {
+        KDEBUG("Swapping texture!");
+        EventContext context = {};
+        event_fire(EVENT_CODE_DEBUG0, gameInstance, context);
+    }
+    // TODO: end temp
+
+
     // HACK: Temp code to move the camera around
     if(input_is_key_down(KEY_A) || input_is_key_down(KEY_LEFT)){
         camera_yaw(state,1.0f * deltaTime);

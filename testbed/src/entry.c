@@ -8,8 +8,8 @@ b8 create_game(Game* outGame){
     outGame->applicationConfig.startX = 100;
     outGame->applicationConfig.startY = 100;
     outGame->applicationConfig.name = (char*)"Kohi Testbed";
-    outGame->applicationConfig.startWidth = 1280;
-    outGame->applicationConfig.startHeight = 720;
+    outGame->applicationConfig.startWidth = 640;
+    outGame->applicationConfig.startHeight = 480;
     outGame->initialize = game_initialize;
     outGame->update = game_update;
     outGame->render = game_render;

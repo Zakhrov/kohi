@@ -91,3 +91,86 @@ void vulkan_image_destroy(VulkanContext* context, VulkanImage* image,int deviceI
         image->handle = 0;
     }
 }
+
+void vulkan_image_transition_layout(
+    VulkanContext* context,
+    VulkanCommandBuffer* commandBuffer,
+    VulkanImage* image,
+    VkFormat format,
+    VkImageLayout oldLayout,
+    VkImageLayout newLayout, int deviceIndex){
+
+        VkImageMemoryBarrier barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = context->device.graphicsQueueIndex[deviceIndex];
+    barrier.dstQueueFamilyIndex = context->device.graphicsQueueIndex[deviceIndex];
+    barrier.image = image->handle;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+
+    VkPipelineStageFlags source_stage;
+    VkPipelineStageFlags dest_stage;
+
+    // Don't care about the old layout - transition to optimal layout (for the underlying implementation).
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        // Don't care what stage the pipeline is in at the start.
+        source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+        // Used for copying
+        dest_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        // Transitioning from a transfer destination layout to a shader-readonly layout.
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        // From a copying stage to...
+        source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+        // The fragment stage.
+        dest_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    } else {
+        KFATAL("unsupported layout transition!");
+        return;
+    }
+
+    vkCmdPipelineBarrier(
+        commandBuffer->handle,
+        source_stage, dest_stage,
+        0,
+        0, 0,
+        0, 0,
+        1, &barrier);
+
+
+    }
+
+
+void vulkan_image_copy_from_buffer(
+    VulkanContext* context,
+    VulkanImage* image,
+    VkBuffer buffer,
+    VulkanCommandBuffer* commandBuffer,int deviceIndex){
+
+        VkBufferImageCopy region;
+        kzero_memory(&region,sizeof(VkBufferImageCopy));
+        region.bufferImageHeight = 0;
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0;
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageExtent.width = image->width;
+        region.imageExtent.height = image->height;
+        region.imageExtent.depth = 1;
+
+        vkCmdCopyBufferToImage(commandBuffer->handle,buffer,image->handle,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,1,&region);
+
+    }

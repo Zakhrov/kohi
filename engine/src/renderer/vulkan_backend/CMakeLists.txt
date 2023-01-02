@@ -2,6 +2,7 @@ project(KohiVulkanBackend)
 find_package(glm REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED )
+add_subdirectory(shaders)
 target_sources(${PROJECT_NAME} PRIVATE vulkan_backend.cpp
 vulkan_device.cpp
 vulkan_image.cpp
@@ -15,7 +16,6 @@ vulkan_utils.cpp
 vulkan_shader_utils.cpp
 vulkan_pipeline.cpp
 vulkan_buffer.cpp
-shaders/vulkan_object_shader.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} LINK_PUBLIC vulkan glm::glm)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC vulkan KohiVulkanShaders glm::glm)

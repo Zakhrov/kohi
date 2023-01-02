@@ -13,6 +13,8 @@ file(GLOB_RECURSE GLSL_VERT_SHADER_FILES
     "shaders/*.vert.glsl"
     )
 
+file(GLOB_RECURSE TEXTURE_FILES "textures/*.png")
+
 foreach(GLSL_FRAG ${GLSL_FRAG_SHADER_FILES})
   get_filename_component(FILE_NAME ${GLSL_FRAG} NAME)
   set(SPIRV "${PROJECT_BINARY_DIR}/shaders/${FILE_NAME}.spv")
@@ -34,6 +36,16 @@ foreach(GLSL_VERT ${GLSL_VERT_SHADER_FILES})
     DEPENDS ${GLSL_VERT})
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL_VERT)
+foreach(TEXTURE_FILE ${TEXTURE_FILES})
+  get_filename_component(FILE_NAME ${TEXTURE_FILE} NAME)
+  set(SPIRV "${PROJECT_BINARY_DIR}/textures/${FILE_NAME}")
+  add_custom_command(
+    OUTPUT ${SPIRV}
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/textures/"
+    COMMAND cp ${TEXTURE_FILE} ${SPIRV}
+    DEPENDS ${GLSL_FRAG})
+  list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+endforeach(TEXTURE_FILE)
 
 add_custom_target(
     ${PROJECT_NAME} 
