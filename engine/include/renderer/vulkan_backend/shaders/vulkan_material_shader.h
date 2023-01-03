@@ -2,7 +2,7 @@
 #include "../vulkan_types.inl"
 #include "../../renderer_types.inl"
 
-b8 vulkan_material_shader_create(VulkanContext* context, Texture* defaultDiffuse, VulkanMaterialShader* shader,int deviceIndex);
+b8 vulkan_material_shader_create(VulkanContext* context,  VulkanMaterialShader* shader,int deviceIndex);
 
 void vulkan_material_shader_destroy(VulkanContext* context, VulkanMaterialShader* shader,int deviceIndex);
 

@@ -7,4 +7,5 @@ add_subdirectory(renderer)
 # add_subdirectory(resources)
 add_subdirectory(math)
 add_subdirectory(memory)
+add_subdirectory(systems)
 

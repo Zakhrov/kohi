@@ -4,8 +4,13 @@
 #include "game_types.h"
 #include "memory/kmemory.h"
 #include "core/clock.h"
-#include "renderer/renderer_frontend.h"
 #include "memory/linear_allocator.h"
+
+// Renderer
+#include "renderer/renderer_frontend.h"
+
+// Systems
+#include "systems/texture_system.h"
 
 
 typedef struct ApplicationState{
@@ -35,6 +40,9 @@ typedef struct ApplicationState{
 
     u64 rendererSystemMemoryReqs;
     void* rendererSystemState;
+
+    u64 textureSystemMemoryReqs;
+    void* textureSystemState;
 
 
 } ApplicationState;
@@ -102,11 +110,22 @@ b8 application_create(Game* gameInstance){
     gameInstance->applicationConfig.startWidth,
     gameInstance->applicationConfig.startHeight);
 
+    //Renderer System
     renderer_system_initialize(&applicationState->rendererSystemMemoryReqs,0,0,0);
     applicationState->rendererSystemState = linear_allocator_allocate(&applicationState->systemsAllocator,applicationState->rendererSystemMemoryReqs);
     
     if(!renderer_system_initialize(&applicationState->rendererSystemMemoryReqs,applicationState->rendererSystemState,applicationState->platformSystemState,gameInstance->applicationConfig.name)){
         KFATAL("Failed to initialize renderer");
+        return false;
+    }
+
+    // Texture system.
+    TextureSystemConfig texture_sys_config;
+    texture_sys_config.maxTextureCount = 65536;
+    texture_system_initialize(&applicationState->textureSystemMemoryReqs, 0, texture_sys_config);
+    applicationState->textureSystemState = linear_allocator_allocate(&applicationState->systemsAllocator, applicationState->textureSystemMemoryReqs);
+    if (!texture_system_initialize(&applicationState->textureSystemMemoryReqs, applicationState->textureSystemState, texture_sys_config)) {
+        KFATAL("Failed to initialize texture system. Application cannot continue.");
         return false;
     }
     
@@ -194,7 +213,7 @@ b8 application_run(){
     event_unregister(EVENT_CODE_KEY_RELEASED, 0, application_on_key);
     
     input_system_shutdown(applicationState->inputSystemState);
-    
+    texture_system_shutdown(applicationState->textureSystemState);
     renderer_shutdown();
     platform_system_shutdown(&applicationState->platformSystemState);
     memory_system_shutdown(applicationState->memorySystemState);

@@ -209,7 +209,7 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
             context.imagesInFlight[deviceIndex][i] = nullptr;
         }
 
-        if (!vulkan_material_shader_create(&context, backend->defaultDiffuse, &context.materialShaders[deviceIndex],deviceIndex)) {
+        if (!vulkan_material_shader_create(&context, &context.materialShaders[deviceIndex],deviceIndex)) {
             KERROR("Error loading built-in basic_lighting shader.");
             return false;
         }
@@ -391,8 +391,8 @@ b8 vulkan_renderer_backend_begin_frame(RendererBackend *backend, f64 deltaTime)
             &context.imageIndex[deviceIndex],deviceIndex)) {
         return false;
     }
-    // KDEBUG(" ImageIndex >>>> %i on %s",context.imageIndex[deviceIndex],context.device.properties[deviceIndex].deviceName);
-    // KDEBUG(" CurrentFrame >>>> %i on %s",context.currentFrame[deviceIndex],context.device.properties[deviceIndex].deviceName);
+    
+    
     // Begin recording commands.
     VulkanCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.imageIndex[deviceIndex]];
     vulkan_command_buffer_reset(commandBuffer);
@@ -433,7 +433,7 @@ b8 vulkan_renderer_backend_begin_frame(RendererBackend *backend, f64 deltaTime)
 
 void vulkan_renderer_backend_update_global_state(RendererBackend* backend,mat4 projection,mat4 view, vec3 viewPosition,vec4 ambientColor,i32 mode){
     int deviceIndex = backend->frameNumber % context.device.deviceCount;
-    // KDEBUG("Updating Vulkan UBO state for frame number %d at device index %d ",backend->frameNumber,deviceIndex);
+    
     VkCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.imageIndex[deviceIndex]].handle;
     vulkan_material_shader_use(&context,&context.materialShaders[deviceIndex],deviceIndex);
     context.materialShaders[deviceIndex].globalUBO.projection = projection;
@@ -450,21 +450,45 @@ void vulkan_renderer_backend_update_global_state(RendererBackend* backend,mat4 p
 }
 
 void vulkan_renderer_backend_update_object(RendererBackend* backend, GeometryRenderData data){
+    
     int deviceIndex = backend->frameNumber % context.device.deviceCount;
+    vkDeviceWaitIdle(context.device.logicalDevices[deviceIndex]);
+
     VkCommandBuffer* commandBuffer = &context.graphicsCommandBuffers[deviceIndex][context.imageIndex[deviceIndex]].handle;
+
+    
+
     vulkan_material_shader_update_object(&context,&context.materialShaders[deviceIndex],data,deviceIndex);
+
+    
      
      // TODO: Temp code
+    
+
     vulkan_material_shader_use(&context,&context.materialShaders[deviceIndex],deviceIndex);
+
+    
      // Bind vertex buffer at offset.
     VkDeviceSize offsets[1] = {0};
+    
+
     vkCmdBindVertexBuffers(*commandBuffer, 0, 1, &context.vertexBuffers[deviceIndex].handle, (VkDeviceSize*)offsets);
 
+    
+
     // Bind index buffer at offset.
+    
+
     vkCmdBindIndexBuffer(*commandBuffer, context.indexBuffers[deviceIndex].handle, 0, VK_INDEX_TYPE_UINT32);
 
+    
+
     // Issue the draw.
+    
+
     vkCmdDrawIndexed(*commandBuffer, 6, 1, 0, 0, 0);
+
+    
 
     // TODO: End temp Code
 
@@ -717,9 +741,9 @@ b8 create_buffers(VulkanContext* context, int deviceIndex){
 
 }
 
-void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuffers,const char* name, b8 autoRelease, i32 width, i32 height, i32 channelCount, const u8* pixels, b8 hasTransparency, VulkanTextureData* data, int deviceIndex){
+void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuffers,const char* name, i32 width, i32 height, i32 channelCount, const u8* pixels, b8 hasTransparency, VulkanTextureData* data, int deviceIndex){
 
-    KDEBUG("Creating Vulkan Texture on Device %d ",deviceIndex);
+    
     
 
 
@@ -732,14 +756,12 @@ void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuff
     
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    KDEBUG("Creating Vulkan staging Buffer for Texture %s on Device %d ",name,deviceIndex);
+    
     vulkan_buffer_create(&context,imageSize,usage,memoryPropertyFlags,true,stagingBuffers,deviceIndex);
-    KDEBUG("Created Vulkan staging Buffer for Texture %s on Device %d ",name,deviceIndex);
-    KDEBUG("Loading data to Vulkan Buffer for Texture %s on Device %d ",name,deviceIndex);
     vulkan_buffer_load_data(&context,stagingBuffers,0,imageSize,0,pixels,deviceIndex);
-    KDEBUG("Loaded data to Vulkan Buffer for Texture %s on Device %d ",name,deviceIndex);
+    
     // NOTE: Lots of assumptions here
-    KDEBUG("Creating Vulkan Image for Texture %s on Device %d ",name,deviceIndex);
+    
     vulkan_image_create(
         &context,
         VK_IMAGE_TYPE_2D,
@@ -751,30 +773,30 @@ void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuff
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         true,
         VK_IMAGE_ASPECT_COLOR_BIT,
-        &data->images[deviceIndex],deviceIndex);
-    KDEBUG("Created Vulkan Image for Texture %s on Device %d ",name,deviceIndex);
+        &data->image,deviceIndex);
+    
     VulkanCommandBuffer tempBuffer;
     VkCommandPool pool = context.device.graphicsCommandPools[deviceIndex];
     VkQueue queue = context.device.graphicsQueues[deviceIndex];
-    KDEBUG("Allocate and begin Vulkan Command Buffer for Texture %s on Device %d ",name,deviceIndex);
+    
     vulkan_command_buffer_allocate_and_begin_single_use(&context, pool, &tempBuffer,deviceIndex,tempBuffer.id);
-    KDEBUG("Finish Allocate and begin Vulkan Command Buffer for Texture %s on Device %d ",name,deviceIndex);
+    
 
     // Transition the layout from whatever it is currently to optimal for recieving data.
-    KDEBUG("Transition Vulkan Layout for Texture %s on Device %d ",name,deviceIndex);
+    
     vulkan_image_transition_layout(
         &context,
         &tempBuffer,
-        &data->images[deviceIndex],
+        &data->image,
         imageFormat,
         VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,deviceIndex);
-    KDEBUG("End Transition Vulkan Layout for Texture %s on Device %d ",name,deviceIndex);
+    
 
     // Copy the data from the buffer.
-    KDEBUG("Copying image from staging buffer for device %d ", deviceIndex);
-    vulkan_image_copy_from_buffer(&context, &data->images[deviceIndex], stagingBuffers->handle, &tempBuffer,deviceIndex);
-    KDEBUG("Completed Copying image from staging buffer for device %d ", deviceIndex);
+    
+    vulkan_image_copy_from_buffer(&context, &data->image, stagingBuffers->handle, &tempBuffer,deviceIndex);
+    
     // vkDeviceWaitIdle(context.device.logicalDevices[deviceIndex]);
     
 
@@ -782,13 +804,13 @@ void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuff
     vulkan_image_transition_layout(
         &context,
         &tempBuffer,
-        &data->images[deviceIndex],
+        &data->image,
         imageFormat,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,deviceIndex);
-    KDEBUG("Begin End Single Use for Vulkan Command Buffer for Texture %s on Device %d ",name,deviceIndex);
+    
     vulkan_command_buffer_end_single_use(&context, pool, &tempBuffer, queue,deviceIndex);
-    KDEBUG("End End Single Use for Vulkan Command Buffer for Texture %s on Device %d ",name,deviceIndex);
+    
 
     // Create a sampler for the texture
     VkSamplerCreateInfo samplerInfo = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
@@ -809,13 +831,13 @@ void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuff
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 0.0f;
 
-    VkResult result = vkCreateSampler(context.device.logicalDevices[deviceIndex], &samplerInfo, context.allocator, &data->samplers[deviceIndex]);
+    VkResult result = vkCreateSampler(context.device.logicalDevices[deviceIndex], &samplerInfo, context.allocator, &data->sampler);
     if (!vulkan_result_is_success(VK_SUCCESS)) {
         KERROR("Error creating texture sampler: %s", vulkan_result_string(result, true));
         return;
     }
 }
-void vulkan_renderer_backend_create_texture(RendererBackend* backend,const char* name, b8 autoRelease, i32 width, i32 height, i32 channelCount, const u8* pixels, b8 hasTransparency, Texture* texture){
+void vulkan_renderer_backend_create_texture(RendererBackend* backend,const char* name, i32 width, i32 height, i32 channelCount, const u8* pixels, b8 hasTransparency, Texture* texture){
     int deviceIndex = 0;
     texture->width = width;
     texture->height = height;
@@ -824,20 +846,26 @@ void vulkan_renderer_backend_create_texture(RendererBackend* backend,const char*
 
     // Internal Data creation
     // TODO: Use an allocator for this
-    texture->internalData = (VulkanTextureData*)kallocate(sizeof(VulkanTextureData),MEMORY_TAG_TEXTURE);
-    VulkanTextureData* data = (VulkanTextureData*)texture->internalData;
-    data->images = std::vector<VulkanImage>(context.device.deviceCount);
-    data->samplers = std::vector<VkSampler>(context.device.deviceCount);
+    
+    VulkanTexture* vulkanTexture = (VulkanTexture*)kallocate(sizeof(VulkanTexture),MEMORY_TAG_TEXTURE);
+    vulkanTexture->textureData = std::vector<VulkanTextureData*>(context.device.deviceCount);
+
+    
+    
+    
     std::vector<VulkanBuffer> stagingBuffers = std::vector<VulkanBuffer>(context.device.deviceCount);
     
     for(deviceIndex = 0; deviceIndex < context.device.deviceCount; deviceIndex++){
-            vulkan_renderer_backend_create_texture_for_device(&stagingBuffers[deviceIndex],name, autoRelease, width, height, channelCount, pixels, hasTransparency, data, deviceIndex);
+        VulkanTextureData* data = (VulkanTextureData*)kallocate(sizeof(VulkanTextureData),MEMORY_TAG_TEXTURE);
+            vulkan_renderer_backend_create_texture_for_device(&stagingBuffers[deviceIndex],name, width, height, channelCount, pixels, hasTransparency, data, deviceIndex);
             vulkan_buffer_destroy(&context, &stagingBuffers[deviceIndex], deviceIndex);
+            vulkanTexture->textureData[deviceIndex] = data;
         }
     
-
+    texture->internalData = vulkanTexture;
     texture->hasTransparency = hasTransparency;
     texture->generation++;
+    
 
         
 }
@@ -846,25 +874,32 @@ void vulkan_renderer_backend_destroy_texture_for_device(VulkanTextureData* data,
     KINFO("Destroying Texture for %s ",context.device.properties[deviceIndex].deviceName);
     
     
+    
     vkDeviceWaitIdle(context.device.logicalDevices[deviceIndex]);
 
-    vulkan_image_destroy(&context, &data->images[deviceIndex],deviceIndex);
-    kzero_memory(&data->images[deviceIndex], sizeof(VulkanImage));
-    vkDestroySampler(context.device.logicalDevices[deviceIndex], data->samplers[deviceIndex], context.allocator);
-    kzero_memory(&data->samplers[deviceIndex],sizeof(VkSampler));
+    vulkan_image_destroy(&context, &data->image,deviceIndex);
+    kzero_memory(&data->image, sizeof(VulkanImage));
+    vkDestroySampler(context.device.logicalDevices[deviceIndex], data->sampler, context.allocator);
+    kzero_memory(&data->sampler,sizeof(VkSampler));
+    KINFO("Destroyed Texture for %s ",context.device.properties[deviceIndex].deviceName);
 
 }
 
 void vulkan_renderer_backend_destroy_texture(RendererBackend* backend, Texture* texture){
+    KINFO("Destroying Texture %d in Vulkan Backend",texture->id);
     int deviceIndex = 0;
-    VulkanTextureData* data = (VulkanTextureData*)texture->internalData;
-    if(data){
+    VulkanTexture* vulkanTexture = (VulkanTexture*)texture->internalData;
+    
+    if(vulkanTexture){
         for( deviceIndex = 0; deviceIndex < context.device.deviceCount; deviceIndex++){
-            vulkan_renderer_backend_destroy_texture_for_device(data,deviceIndex);
+            VulkanTextureData* data = vulkanTexture->textureData[deviceIndex];
+            if(data){
+                
+                vulkan_renderer_backend_destroy_texture_for_device(data,deviceIndex);
+                kfree(vulkanTexture->textureData[deviceIndex], sizeof(VulkanTextureData), MEMORY_TAG_TEXTURE);
+            }
+            
         }
-        data->images.clear();
-        data->samplers.clear();
-        kfree(texture->internalData, sizeof(VulkanTextureData), MEMORY_TAG_TEXTURE);
         
     }
     kzero_memory(texture, sizeof(Texture));

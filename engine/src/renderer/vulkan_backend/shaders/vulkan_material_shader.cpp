@@ -5,12 +5,13 @@
 #include "memory/kmemory.h"
 #include "renderer/vulkan_backend/vulkan_buffer.h"
 #include "math/kmath.h"
+#include "systems/texture_system.h"
 
 #define BUILTIN_SHADER_NAME_MATERIAL "Builtin.MaterialShader"
 
-b8 vulkan_material_shader_create(VulkanContext *context, Texture* defaultDiffuse, VulkanMaterialShader *shader, int deviceIndex)
+b8 vulkan_material_shader_create(VulkanContext *context, VulkanMaterialShader *shader, int deviceIndex)
 {
-    shader->defaultDiffuse = defaultDiffuse;
+    
     // Shader module init per state
     char stageTypeStrings[OBJECT_SHADER_STAGE_COUNT][5] = {"vert", "frag"};
     VkShaderStageFlagBits stageTypes[OBJECT_SHADER_STAGE_COUNT] = {VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT};
@@ -256,8 +257,15 @@ void vulkan_material_shader_update_global_state(VulkanContext* context,VulkanMat
 
 void vulkan_material_shader_update_object(VulkanContext* context, VulkanMaterialShader* shader,GeometryRenderData data,int deviceIndex){
     u32 imageIndex = context->imageIndex[deviceIndex];
+   
+
     VkCommandBuffer commandBuffer = context->graphicsCommandBuffers[deviceIndex][imageIndex].handle;
+
+    
+
     vkCmdPushConstants(commandBuffer,shader->pipeline.pipelineLayout,VK_SHADER_STAGE_VERTEX_BIT,0,sizeof(mat4),&data.model);
+
+    
 
     // Obtain material data
     VulkanMaterialShaderObjectState* objectState = &shader->objectStates[data.objectId];
@@ -282,7 +290,9 @@ void vulkan_material_shader_update_object(VulkanContext* context, VulkanMaterial
     obo.diffuseColor = vec4_create(s, s, s, 1.0f);
 
     // Load the data into the buffer.
+    
     vulkan_buffer_load_data(context, &shader->objectUniformBuffer, offset, range, 0, &obo,deviceIndex);
+    
 
     // Only do this if the descriptor has not yet been updated.
     if (objectState->descriptorStates[descriptorIndex].generations[imageIndex] == INVALID_ID) {
@@ -312,24 +322,26 @@ void vulkan_material_shader_update_object(VulkanContext* context, VulkanMaterial
     for (u32 sampler_index = 0; sampler_index < sampler_count; ++sampler_index) {
         Texture* t = data.textures[sampler_index];
         u32* descriptor_generation = &objectState->descriptorStates[descriptorIndex].generations[imageIndex];
+        u32* descriptor_id = &objectState->descriptorStates[descriptorIndex].ids[imageIndex];
 
                 // If the texture hasn't been loaded yet, use the default.
+
         // TODO: Determine which use the texture has and pull appropriate default based on that.
         if (t->generation == INVALID_ID) {
-            t = shader->defaultDiffuse;
+            t = texture_system_get_default_texture();
 
             // Reset the descriptor generation if using the default texture.
             *descriptor_generation = INVALID_ID;
         }
 
         // Check if the descriptor needs updating first.
-        if (t && (*descriptor_generation != t->generation || *descriptor_generation == INVALID_ID)) {
-            VulkanTextureData* internalData = (VulkanTextureData*)t->internalData;
+        if (t && ( *descriptor_id != t->id || *descriptor_generation != t->generation || *descriptor_generation == INVALID_ID)) {
+            VulkanTexture* internalData = (VulkanTexture*)t->internalData;
 
             // Assign view and sampler.
             image_infos[sampler_index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            image_infos[sampler_index].imageView = internalData->images[deviceIndex].view;
-            image_infos[sampler_index].sampler = internalData->samplers[deviceIndex];
+            image_infos[sampler_index].imageView = internalData->textureData[deviceIndex]->image.view;
+            image_infos[sampler_index].sampler = internalData->textureData[deviceIndex]->sampler;
 
             VkWriteDescriptorSet descriptor = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descriptor.dstSet = object_descriptor_set;
@@ -344,6 +356,7 @@ void vulkan_material_shader_update_object(VulkanContext* context, VulkanMaterial
             // Sync frame generation if not using a default texture.
             if (t->generation != INVALID_ID) {
                 *descriptor_generation = t->generation;
+                *descriptor_id = t->id;
             }
             descriptorIndex++;
         }
@@ -351,10 +364,13 @@ void vulkan_material_shader_update_object(VulkanContext* context, VulkanMaterial
 
     if (descriptorCount > 0) {
         vkUpdateDescriptorSets(context->device.logicalDevices[deviceIndex], descriptorCount, descriptorWrites, 0, 0);
+
     }
 
     // Bind the descriptor set to be updated, or in case the shader changed.
+
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->pipeline.pipelineLayout, 1, 1, &object_descriptor_set, 0, 0);
+
 
 }
 
@@ -368,6 +384,7 @@ b8 vulkan_material_shader_acquire_resources(VulkanContext* context, VulkanMateri
     for (u32 i = 0; i < VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT; ++i) {
         for (u32 j = 0; j < 3; ++j) {
             objectState->descriptorStates[i].generations[j] = INVALID_ID;
+            objectState->descriptorStates[i].ids[j] = INVALID_ID;
         }
     }
 
@@ -403,6 +420,8 @@ void vulkan_material_shader_release_resources(VulkanContext* context, VulkanMate
     for (u32 i = 0; i < VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT; ++i) {
         for (u32 j = 0; j < 3; ++j) {
             objectState->descriptorStates[i].generations[j] = INVALID_ID;
+            objectState->descriptorStates[i].ids[j] = INVALID_ID;
+
         }
     }
 

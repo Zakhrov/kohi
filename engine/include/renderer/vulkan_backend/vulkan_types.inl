@@ -158,6 +158,7 @@ typedef struct VulkanPipeline{
 typedef struct VulkanDescriptorState{
   // one per frame
   u32 generations[3];
+  u32 ids[3];
 }VulkanDescriptorState;
 typedef struct VulkanMaterialShaderObjectState {
   // descriptor sets per frame
@@ -188,10 +189,6 @@ typedef struct VulkanMaterialShader{
 
     // TODO: make dynamic
     VulkanMaterialShaderObjectState objectStates[VULKAN_OBJECT_MAX_OBJECT_COUNT];
-
-    // Pointers to a defalt Texture
-    Texture* defaultDiffuse;
-
 }VulkanMaterialShader;
 
 
@@ -235,9 +232,13 @@ typedef struct VulkanContext {
 } VulkanContext;
 
 typedef struct VulkanTextureData{
-  std::vector<VulkanImage> images;
-  std::vector<VkSampler> samplers;
+  VulkanImage image;
+  VkSampler sampler;
 } VulkanTextureData;
+
+typedef struct VulkanTexture{
+  std::vector<VulkanTextureData*> textureData;
+}VulkanTexture;
 
 
 
