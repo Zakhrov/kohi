@@ -84,6 +84,7 @@ b8 material_system_initialize(u64* memory_requirement, void* state, MaterialSyst
         KFATAL("Failed to create default material. Application cannot continue.");
         return false;
     }
+    KINFO("Material System Initialized");
 
     return true;
 
@@ -119,6 +120,7 @@ Material* material_system_acquire(const char* name){
 
     // TODO: try different extensions
     string_format(full_file_path, format_str, name, "kmt");
+    
     if (!load_configuration_file(full_file_path, &config)) {
         KERROR("Failed to load material file: '%s'. Null pointer will be returned.", full_file_path);
         return 0;
@@ -363,6 +365,7 @@ b8 load_configuration_file(const char* path, MaterialConfig* config){
     }
 
     filesystem_close(&f);
+    KDEBUG("MATERIAL CONFIG NAME %s",config->name);
 
     return true;
 

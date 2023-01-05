@@ -246,11 +246,8 @@ b8 vulkan_renderer_backend_initialize(RendererBackend *backend, const char *appl
 
     upload_data_range(&context, context.device.graphicsCommandPools[deviceIndex], 0, context.device.graphicsQueues[deviceIndex], &context.vertexBuffers[deviceIndex], 0, sizeof(Vertex3D) * vert_count, verts,deviceIndex);
     upload_data_range(&context, context.device.graphicsCommandPools[deviceIndex], 0, context.device.graphicsQueues[deviceIndex], &context.indexBuffers[deviceIndex], 0, sizeof(u32) * index_count, indices,deviceIndex);
-    u32 objectId = 0;
-    if(!vulkan_material_shader_acquire_resources(&context,&context.materialShaders[deviceIndex],&objectId,deviceIndex)){
-            KERROR("Failed to aquire shader resources");
-            return false;
-    }
+
+    
     // TODO: end temp code
     }
 
@@ -909,4 +906,32 @@ void vulkan_renderer_backend_destroy_texture(RendererBackend* backend, Texture* 
     kzero_memory(texture, sizeof(Texture));
     
 
+}
+
+b8 vulkan_renderer_backend_create_material(Material* material){
+    
+    int deviceIndex = 0;
+    if(material){
+
+        for(deviceIndex = 0; deviceIndex < context.device.deviceCount; deviceIndex++){
+
+            if(!vulkan_material_shader_acquire_resources(&context,&context.materialShaders[deviceIndex],material,deviceIndex)){
+            KERROR("Could not acquire resource for Material");
+            return false;
+
+            }
+            KDEBUG("VULKAN BACKEND MATERIAL STUB %d Device %s",material->diffuseMap.texture->internalData,context.device.properties[deviceIndex].deviceName);
+        }
+        return true;
+    }
+    return false;
+
+}
+void vulkan_renderer_backend_destroy_material(Material* material){
+    
+    for(int deviceIndex = 0; deviceIndex < context.device.deviceCount; deviceIndex++){
+        vulkan_material_shader_release_resources(&context,&context.materialShaders[deviceIndex],material,deviceIndex);
+        KDEBUG("VULKAN BACKEND MATERIAL STUB DESTROY %s",context.device.properties[deviceIndex].deviceName);
+    }
+    material->internalId = INVALID_ID;
 }

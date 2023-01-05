@@ -12,5 +12,5 @@ void vulkan_material_shader_update_global_state(VulkanContext* context, VulkanMa
 
 void vulkan_material_shader_update_object(VulkanContext* context, VulkanMaterialShader* shader,GeometryRenderData data,int deviceIndex);
 
-b8 vulkan_material_shader_acquire_resources(VulkanContext* context, VulkanMaterialShader* shader, u32* outObjectId, int deviceIndex);
-void vulkan_material_shader_release_resources(VulkanContext* context, VulkanMaterialShader* shader, u32 objectId, int deviceIndex);
+b8 vulkan_material_shader_acquire_resources(VulkanContext* context, VulkanMaterialShader* shader, Material* material, int deviceIndex);
+void vulkan_material_shader_release_resources(VulkanContext* context, VulkanMaterialShader* shader, Material* material, int deviceIndex);

@@ -16,6 +16,8 @@ b8 vulkan_renderer_backend_end_frame(RendererBackend* backend, f64 deltaTime);
 void vulkan_renderer_backend_update_object(RendererBackend* backend, GeometryRenderData data);
 void vulkan_renderer_backend_create_texture(RendererBackend* backend, const u8* pixels, Texture* texture);
 void vulkan_renderer_backend_destroy_texture(RendererBackend* backend,Texture* texture);
+b8 vulkan_renderer_backend_create_material(Material* material);
+void vulkan_renderer_backend_destroy_material(Material* material);
 #ifdef __cplusplus
 }
 void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuffers,const u8* pixels, struct VulkanTexture* texture, int deviceIndex);

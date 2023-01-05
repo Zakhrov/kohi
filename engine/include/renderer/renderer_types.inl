@@ -20,17 +20,16 @@ typedef struct GlobalUniformObject{
 
 }GlobalUniformObject;
 
-typedef struct ObjectUBO{
+typedef struct MaterialUniformObject{
     vec4 diffuseColor;
     vec4 reserved1; // 16 bytes reserved for padding
     vec4 reserved2; // 16 bytes reserved for padding
     vec4 reserved3; // 16 bytes reserved for padding
 
-}ObjectUBO;
+}MaterialUniformObject;
 typedef struct GeometryRenderData{
-    u32 objectId;
+    Material* material;
     mat4 model;
-    Texture* textures[16];
 }GeometryRenderData;
 
 typedef struct RendererBackend{
@@ -45,5 +44,7 @@ typedef struct RendererBackend{
     b8(*end_frame)(struct RendererBackend* backend, f64 deltaTime);
     void(*create_texture)(struct RendererBackend* backend, const u8* pixels, struct Texture* texture);
     void(*destroy_texture)(struct RendererBackend* backend,struct Texture* texture);
+    b8(*create_material)(struct Material* material);
+    void(*destroy_material)(struct Material* material);
 
 }RendererBackend;

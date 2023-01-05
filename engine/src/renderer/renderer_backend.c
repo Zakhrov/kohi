@@ -12,6 +12,8 @@ b8 renderer_backend_create(RendererBackendType rendererBackendType,RendererBacke
         backend->resized = vulkan_renderer_backend_on_resized;
         backend->create_texture = vulkan_renderer_backend_create_texture;
         backend->destroy_texture = vulkan_renderer_backend_destroy_texture;
+        backend->create_material = vulkan_renderer_backend_create_material;
+        backend->destroy_material = vulkan_renderer_backend_destroy_material;
         
 
         
@@ -32,6 +34,8 @@ void renderer_backend_destroy(RendererBackend* backend){
     backend->shutdown = 0;
     backend->create_texture = 0;
     backend->destroy_texture = 0;
+    backend->create_material = 0;
+    backend->destroy_material = 0;
     
 
 }

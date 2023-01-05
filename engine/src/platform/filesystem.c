@@ -57,6 +57,7 @@ b8 filesystem_read_line(FileHandle* handle, u64 max_length, char** line_buf, u64
         char* buf = *line_buf;
         if (fgets(buf, max_length, (FILE*)handle->handle) != 0) {
             *out_line_length = strlen(*line_buf);
+            return true;
         }
     }
     return false;

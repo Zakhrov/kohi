@@ -134,14 +134,14 @@ b8 application_create(Game* gameInstance){
     }
 
     // Material system.
-    // MaterialSystemConfig material_sys_config;
-    // material_sys_config.maxMaterialCount = 4096;
-    // material_system_initialize(&applicationState->materialSystemMemoryReqs, 0, material_sys_config);
-    // applicationState->materialSystemState = linear_allocator_allocate(&applicationState->systemsAllocator, applicationState->materialSystemMemoryReqs);
-    // if (!material_system_initialize(&applicationState->materialSystemMemoryReqs, applicationState->materialSystemState, material_sys_config)) {
-    //     KFATAL("Failed to initialize material system. Application cannot continue.");
-    //     return false;
-    // }
+    MaterialSystemConfig material_sys_config;
+    material_sys_config.maxMaterialCount = 4096;
+    material_system_initialize(&applicationState->materialSystemMemoryReqs, 0, material_sys_config);
+    applicationState->materialSystemState = linear_allocator_allocate(&applicationState->systemsAllocator, applicationState->materialSystemMemoryReqs);
+    if (!material_system_initialize(&applicationState->materialSystemMemoryReqs, applicationState->materialSystemState, material_sys_config)) {
+        KFATAL("Failed to initialize material system. Application cannot continue.");
+        return false;
+    }
 
     
 
@@ -228,6 +228,7 @@ b8 application_run(){
     event_unregister(EVENT_CODE_KEY_RELEASED, 0, application_on_key);
     
     input_system_shutdown(applicationState->inputSystemState);
+    material_system_shutdown(applicationState->materialSystemState);
     texture_system_shutdown(applicationState->textureSystemState);
     renderer_shutdown();
     platform_system_shutdown(&applicationState->platformSystemState);

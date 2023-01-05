@@ -6,6 +6,7 @@
 #include "math/kmath.h"
 #include "resources/resource_types.h"
 #include "systems/texture_system.h"
+#include "systems/material_system.h"
 
 // TODO: Temporary
 #include "core/kstring.h"
@@ -19,7 +20,7 @@ typedef struct RendererSystemState{
     f32 nearClip;
     f32 farClip;
     mat4 view;
-    Texture* testDiffuse;
+    Material* testMaterial;
 
 }RendererSystemState;
 
@@ -38,14 +39,16 @@ b8 event_on_debug_event(u16 code, void* sender, void* listener_inst, EventContex
     const char* oldName = names[choice];
     choice++;
     choice %= 3;
+    
+    
+    // Acquire the new texture.
+    statePtr->testMaterial->diffuseMap.texture = texture_system_acquire(names[choice], true);
+    if (!statePtr->testMaterial->diffuseMap.texture) {
+        KWARN("event_on_debug_event no texture! using default");
+        statePtr->testMaterial->diffuseMap.texture = texture_system_get_default_texture();
+    }
     // Release the old texture
-    
-    
-    // Load up the new texture.
-    statePtr->testDiffuse = texture_system_acquire(names[choice],true);
-    string_ncopy(statePtr->testDiffuse->name, names[choice],TEXTURE_NAME_MAX_LENGTH);
     texture_system_release(oldName);
-
     
     return true;
 }
@@ -125,15 +128,27 @@ b8 renderer_draw_frame(RenderPacket* packet){
         mat4 model = quat_to_rotation_matrix(rotation,vec3_zero());
         GeometryRenderData data = {};
         data.model = model;
-        data.objectId = 0; // TODO: Actual Object 
+        data.material = statePtr->testMaterial;
         //TODO: Temporary
-        // Get Default texture if testDiffuse does not exist
-        if(!statePtr->testDiffuse){
-            statePtr->testDiffuse = texture_system_get_default_texture();
-            string_ncopy(statePtr->testDiffuse->name, DEFAULT_TEXTURE_NAME,TEXTURE_NAME_MAX_LENGTH);
-        }
         
-        data.textures[0] = statePtr->testDiffuse;
+        // Create a default material if does not exist.
+        if (!statePtr->testMaterial) {
+            // Automatic config
+            statePtr->testMaterial = material_system_acquire("test_material");
+            if (!statePtr->testMaterial) {
+                KWARN("Automatic material load failed, falling back to manual default material.");
+                // Manual config
+                MaterialConfig config;
+                string_ncopy(config.name, "test_material", MATERIAL_NAME_MAX_LENGTH);
+                config.autoRelease = false;
+                config.diffuseColour = vec4_one();  // white
+                string_ncopy(config.diffuseMapName, DEFAULT_TEXTURE_NAME, TEXTURE_NAME_MAX_LENGTH);
+                statePtr->testMaterial = material_system_acquire_from_config(config);
+            }
+        }
+
+        data.material = statePtr->testMaterial;
+
         statePtr->backend.update_object(&statePtr->backend,data);
         angle += 0.0005f;
         b8 result = renderer_end_frame(packet->deltaTime);
@@ -160,11 +175,12 @@ void renderer_destroy_texture(Texture* texture){
 
 b8 renderer_create_material(Material* material){
     KDEBUG("MATERIAL STUB %d",material->diffuseMap.texture->internalData);
-    return false;
+    return statePtr->backend.create_material(material);
 
 }
 
 void renderer_destroy_material(Material* material){
     KDEBUG("MATERIAL STUB %d",material->diffuseMap.texture->internalData);
+    statePtr->backend.destroy_material(material);
 
 }
