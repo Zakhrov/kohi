@@ -11,6 +11,7 @@
 
 // Systems
 #include "systems/texture_system.h"
+#include "systems/material_system.h"
 
 
 typedef struct ApplicationState{
@@ -43,6 +44,9 @@ typedef struct ApplicationState{
 
     u64 textureSystemMemoryReqs;
     void* textureSystemState;
+
+    u64 materialSystemMemoryReqs;
+    void* materialSystemState;
 
 
 } ApplicationState;
@@ -128,6 +132,17 @@ b8 application_create(Game* gameInstance){
         KFATAL("Failed to initialize texture system. Application cannot continue.");
         return false;
     }
+
+    // Material system.
+    // MaterialSystemConfig material_sys_config;
+    // material_sys_config.maxMaterialCount = 4096;
+    // material_system_initialize(&applicationState->materialSystemMemoryReqs, 0, material_sys_config);
+    // applicationState->materialSystemState = linear_allocator_allocate(&applicationState->systemsAllocator, applicationState->materialSystemMemoryReqs);
+    // if (!material_system_initialize(&applicationState->materialSystemMemoryReqs, applicationState->materialSystemState, material_sys_config)) {
+    //     KFATAL("Failed to initialize material system. Application cannot continue.");
+    //     return false;
+    // }
+
     
 
     // Event Registration 

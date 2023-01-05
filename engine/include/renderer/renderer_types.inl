@@ -43,7 +43,7 @@ typedef struct RendererBackend{
     void(*update_object)(struct RendererBackend* backend,GeometryRenderData data);
     b8(*begin_frame)(struct RendererBackend* backend, f64 deltaTime);
     b8(*end_frame)(struct RendererBackend* backend, f64 deltaTime);
-    void(*create_texture)(struct RendererBackend* backend,const char* name, i32 width, i32 height, i32 channelCount, const u8* pixels, b8 hasTransparency, struct Texture* texture);
+    void(*create_texture)(struct RendererBackend* backend, const u8* pixels, struct Texture* texture);
     void(*destroy_texture)(struct RendererBackend* backend,struct Texture* texture);
 
 }RendererBackend;

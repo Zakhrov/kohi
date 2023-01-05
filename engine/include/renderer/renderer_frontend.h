@@ -18,9 +18,13 @@ b8 renderer_draw_frame(RenderPacket* packet);
 // HACK: This should not be exposed outside the engine!!!!
 KAPI void renderer_set_view(mat4 view);
 
-void renderer_create_texture(const char* name, i32 width, i32 height, i32 channelCount, const u8* pixels, b8 hasTransparency, Texture* texture);
+void renderer_create_texture(const u8* pixels, Texture* texture);
 
 void renderer_destroy_texture(Texture* texture);
+
+b8 renderer_create_material(Material* material);
+
+void renderer_destroy_material(Material* material);
 
 
 #ifdef __cplusplus

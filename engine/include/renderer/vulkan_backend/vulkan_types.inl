@@ -237,6 +237,13 @@ typedef struct VulkanTextureData{
 } VulkanTextureData;
 
 typedef struct VulkanTexture{
+  char name[TEXTURE_NAME_MAX_LENGTH];
+  u32 id;
+  u32 width;
+  u32 height;
+  u8 channelCount;
+  b8 hasTransparency;
+  u32 generation;
   std::vector<VulkanTextureData*> textureData;
 }VulkanTexture;
 

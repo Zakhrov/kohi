@@ -44,12 +44,14 @@ KAPI b8 filesystem_open(const char* path, FileModes mode, b8 binary, FileHandle*
 KAPI void filesystem_close(FileHandle* handle);
 
 /** 
- * Reads up to a newline or EOF. Allocates *line_buf, which must be freed by the caller.
- * @param handle A pointer to a FileHandle structure.
- * @param line_buf A pointer to a character array which will be allocated and populated by this method.
+ * Reads up to a newline or EOF.
+ * @param handle A pointer to a file_handle structure.
+ * @param max_length The maximum length to be read from the line.
+ * @param line_buf A pointer to a character array populated by this method. Must already be allocated.
+ * @param out_line_length A pointer to hold the line length read from the file.
  * @returns True if successful; otherwise false.
  */
-KAPI b8 filesystem_read_line(FileHandle* handle, char** lineBuf);
+KAPI b8 filesystem_read_line(FileHandle* handle,u64 max_length, char** line_buf, u64* out_line_length);
 
 /** 
  * Writes text to the provided file, appending a '\n' afterward.

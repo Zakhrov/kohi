@@ -741,14 +741,17 @@ b8 create_buffers(VulkanContext* context, int deviceIndex){
 
 }
 
-void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuffers,const char* name, i32 width, i32 height, i32 channelCount, const u8* pixels, b8 hasTransparency, VulkanTextureData* data, int deviceIndex){
+void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuffers,const u8* pixels, struct VulkanTexture* texture, int deviceIndex){
+    VulkanTextureData* data = (VulkanTextureData*)kallocate(sizeof(VulkanTextureData),MEMORY_TAG_TEXTURE);
+    texture->textureData[deviceIndex] = data;
+
 
     
     
 
 
     
-    VkDeviceSize imageSize = width * height * channelCount;
+    VkDeviceSize imageSize = texture->width * texture->height * texture->channelCount;
 
     // NOTE: Assumes 8 bits per channel
     VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -765,8 +768,8 @@ void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuff
     vulkan_image_create(
         &context,
         VK_IMAGE_TYPE_2D,
-        width,
-        height,
+        texture->width,
+        texture->height,
         imageFormat,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -837,18 +840,19 @@ void vulkan_renderer_backend_create_texture_for_device(VulkanBuffer* stagingBuff
         return;
     }
 }
-void vulkan_renderer_backend_create_texture(RendererBackend* backend,const char* name, i32 width, i32 height, i32 channelCount, const u8* pixels, b8 hasTransparency, Texture* texture){
+void vulkan_renderer_backend_create_texture(RendererBackend* backend, const u8* pixels, Texture* texture){
     int deviceIndex = 0;
-    texture->width = width;
-    texture->height = height;
-    texture->channelCount = channelCount;
-    texture->generation = INVALID_ID;
+    
 
     // Internal Data creation
     // TODO: Use an allocator for this
     
     VulkanTexture* vulkanTexture = (VulkanTexture*)kallocate(sizeof(VulkanTexture),MEMORY_TAG_TEXTURE);
     vulkanTexture->textureData = std::vector<VulkanTextureData*>(context.device.deviceCount);
+    vulkanTexture->width = texture->width;
+    vulkanTexture->height = texture->height;
+    vulkanTexture->channelCount = texture->channelCount;
+    vulkanTexture->id = texture->id;
 
     
     
@@ -856,14 +860,14 @@ void vulkan_renderer_backend_create_texture(RendererBackend* backend,const char*
     std::vector<VulkanBuffer> stagingBuffers = std::vector<VulkanBuffer>(context.device.deviceCount);
     
     for(deviceIndex = 0; deviceIndex < context.device.deviceCount; deviceIndex++){
-        VulkanTextureData* data = (VulkanTextureData*)kallocate(sizeof(VulkanTextureData),MEMORY_TAG_TEXTURE);
-            vulkan_renderer_backend_create_texture_for_device(&stagingBuffers[deviceIndex],name, width, height, channelCount, pixels, hasTransparency, data, deviceIndex);
+        
+            vulkan_renderer_backend_create_texture_for_device(&stagingBuffers[deviceIndex], pixels, vulkanTexture, deviceIndex);
             vulkan_buffer_destroy(&context, &stagingBuffers[deviceIndex], deviceIndex);
-            vulkanTexture->textureData[deviceIndex] = data;
+            
         }
     
     texture->internalData = vulkanTexture;
-    texture->hasTransparency = hasTransparency;
+    texture->hasTransparency = vulkanTexture->hasTransparency;
     texture->generation++;
     
 

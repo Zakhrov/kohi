@@ -43,7 +43,7 @@ b8 event_on_debug_event(u16 code, void* sender, void* listener_inst, EventContex
     
     // Load up the new texture.
     statePtr->testDiffuse = texture_system_acquire(names[choice],true);
-    statePtr->testDiffuse->name = names[choice];
+    string_ncopy(statePtr->testDiffuse->name, names[choice],TEXTURE_NAME_MAX_LENGTH);
     texture_system_release(oldName);
 
     
@@ -130,7 +130,7 @@ b8 renderer_draw_frame(RenderPacket* packet){
         // Get Default texture if testDiffuse does not exist
         if(!statePtr->testDiffuse){
             statePtr->testDiffuse = texture_system_get_default_texture();
-            statePtr->testDiffuse->name = DEFAULT_TEXTURE_NAME;
+            string_ncopy(statePtr->testDiffuse->name, DEFAULT_TEXTURE_NAME,TEXTURE_NAME_MAX_LENGTH);
         }
         
         data.textures[0] = statePtr->testDiffuse;
@@ -149,11 +149,22 @@ void renderer_set_view(mat4 view){
     statePtr->view = view;
 }
 
-void renderer_create_texture(const char* name, i32 width, i32 height, i32 channelCount, const u8* pixels, b8 hasTransparency, Texture* texture){
-    statePtr->backend.create_texture(&statePtr->backend, name,width,height,channelCount,pixels,hasTransparency,texture);
+void renderer_create_texture(const u8* pixels, Texture* texture){
+    statePtr->backend.create_texture(&statePtr->backend, pixels,texture);
 }
 
 
 void renderer_destroy_texture(Texture* texture){
     statePtr->backend.destroy_texture(&statePtr->backend,texture);
+}
+
+b8 renderer_create_material(Material* material){
+    KDEBUG("MATERIAL STUB %d",material->diffuseMap.texture->internalData);
+    return false;
+
+}
+
+void renderer_destroy_material(Material* material){
+    KDEBUG("MATERIAL STUB %d",material->diffuseMap.texture->internalData);
+
 }
