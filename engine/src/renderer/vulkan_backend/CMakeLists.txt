@@ -18,4 +18,4 @@ vulkan_pipeline.cpp
 vulkan_buffer.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} LINK_PUBLIC vulkan KohiVulkanShaders glm::glm)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC vulkan KohiVulkanShaders glm::glm KohiSystems)

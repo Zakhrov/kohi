@@ -8,9 +8,6 @@ typedef enum RendererBackendType {
     RENDERER_BACKEND_TYPE_DIRECTX,
 }RendererBackendType;
 
-typedef struct RenderPacket{
-    f32 deltaTime;
-}RenderPacket;
 
 typedef struct GlobalUniformObject{
     mat4 projection;
@@ -28,7 +25,7 @@ typedef struct MaterialUniformObject{
 
 }MaterialUniformObject;
 typedef struct GeometryRenderData{
-    Material* material;
+    Geometry* geometry;
     mat4 model;
 }GeometryRenderData;
 
@@ -39,12 +36,20 @@ typedef struct RendererBackend{
     void(*shutdown)(struct RendererBackend* backend);
     void(*resized)(struct RendererBackend* backend, u16 width, u16 height);
     void(*update_global_state)(struct RendererBackend* backend,mat4 projection,mat4 view, vec3 viewPosition,vec4 ambientColor,i32 mode);
-    void(*update_object)(struct RendererBackend* backend,GeometryRenderData data);
+    void(*draw_geometry)(struct RendererBackend* backend,GeometryRenderData data);
     b8(*begin_frame)(struct RendererBackend* backend, f64 deltaTime);
     b8(*end_frame)(struct RendererBackend* backend, f64 deltaTime);
-    void(*create_texture)(struct RendererBackend* backend, const u8* pixels, struct Texture* texture);
-    void(*destroy_texture)(struct RendererBackend* backend,struct Texture* texture);
-    b8(*create_material)(struct Material* material);
-    void(*destroy_material)(struct Material* material);
+    void(*create_texture)(const u8* pixels, Texture* texture);
+    void(*destroy_texture)(Texture* texture);
+    b8(*create_material)(Material* material);
+    void(*destroy_material)(Material* material);
+    b8(*create_geometry)(Geometry* geometry,u32 vertexCount,const Vertex3D* vertices, u32 indexCount,const u32* indices);
+    void(*destroy_geometry)(Geometry* geometry);
 
 }RendererBackend;
+
+typedef struct RenderPacket{
+    f32 deltaTime;
+    u32 geometryCount;
+    GeometryRenderData* geometries;
+}RenderPacket;

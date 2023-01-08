@@ -196,6 +196,38 @@ typedef struct VulkanMaterialShader{
 }VulkanMaterialShader;
 
 
+typedef struct VulkanTextureData{
+  VulkanImage image;
+  VkSampler sampler;
+} VulkanTextureData;
+
+typedef struct VulkanTexture{
+  char name[TEXTURE_NAME_MAX_LENGTH];
+  u32 id;
+  u32 width;
+  u32 height;
+  u8 channelCount;
+  b8 hasTransparency;
+  u32 generation;
+  std::vector<VulkanTextureData*> textureData;
+}VulkanTexture;
+
+
+#define VULKAN_MAX_GEOMETRY_COUNT 4096
+
+typedef struct VulkanGeometryData{
+  u32 id;
+  u32 generation;
+  u32 vertexCount;
+  u32 vertexSize;
+  u32 vertexBufferOffset;
+  u32 indexCount;
+  u32 indexSize;
+  u32 indexBufferOffset;
+}VulkanGeometryData;
+
+
+
 
 typedef struct VulkanContext {
     VkInstance instance;
@@ -227,6 +259,9 @@ typedef struct VulkanContext {
     std::vector<u32> geometryVertexOffset;
     std::vector<u32> geometryIndexOffset;
 
+    //TODO: Make dynamic (possibly vector it for multi-GPU)
+    VulkanGeometryData geometries[VULKAN_MAX_GEOMETRY_COUNT];
+
 
     VkResult swapchainResult;
     i32(*findMemoryIndex)(u64 memoryTypeBits,VkMemoryPropertyFlags memoryFlags,int deviceIndex);
@@ -234,25 +269,6 @@ typedef struct VulkanContext {
   VkDebugUtilsMessengerEXT debugMessenger;
 #endif
 } VulkanContext;
-
-typedef struct VulkanTextureData{
-  VulkanImage image;
-  VkSampler sampler;
-} VulkanTextureData;
-
-typedef struct VulkanTexture{
-  char name[TEXTURE_NAME_MAX_LENGTH];
-  u32 id;
-  u32 width;
-  u32 height;
-  u8 channelCount;
-  b8 hasTransparency;
-  u32 generation;
-  std::vector<VulkanTextureData*> textureData;
-}VulkanTexture;
-
-
-
 
 
 #define VK_CHECK(expr){ KASSERT(expr == VK_SUCCESS);}

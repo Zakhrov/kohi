@@ -5,6 +5,7 @@
 #include "memory/kmemory.h"
 #include "core/clock.h"
 #include "memory/linear_allocator.h"
+#include "core/kstring.h"
 
 // Renderer
 #include "renderer/renderer_frontend.h"
@@ -12,6 +13,11 @@
 // Systems
 #include "systems/texture_system.h"
 #include "systems/material_system.h"
+#include "systems/geometry_system.h"
+
+//TODO: Begin Temp code
+#include "math/kmath.h"
+//TODO: End Temp Code
 
 
 typedef struct ApplicationState{
@@ -48,6 +54,13 @@ typedef struct ApplicationState{
     u64 materialSystemMemoryReqs;
     void* materialSystemState;
 
+    u64 geometrySystemMemoryReqs;
+    void* geomoetrySystemState;
+
+    //TODO: Temp
+    Geometry* testGeometry;
+    //TODO: End Temp
+
 
 } ApplicationState;
 
@@ -58,6 +71,33 @@ static ApplicationState* applicationState;
 b8 application_on_event(u16 code, void* sender, void* listener_inst, EventContext context);
 b8 application_on_key(u16 code, void* sender, void* listener_inst, EventContext context);
 b8 application_on_resize(u16 code, void* sender, void* listener_inst, EventContext context);
+// TODO: Temp
+b8 event_on_debug_event(u16 code, void* sender, void* listener_inst, EventContext data) {
+    const char* names[3] = {
+        "Brick_01",
+        "Brick_02",
+        "girl1"};
+    static i8 choice = 2;
+    // Save off old name
+    const char* oldName = names[choice];
+    choice++;
+    choice %= 3;
+    
+    
+    // Acquire the new texture.
+    if(applicationState->testGeometry){
+        applicationState->testGeometry->material->diffuseMap.texture = texture_system_acquire(names[choice], true);
+        if (!applicationState->testGeometry->material->diffuseMap.texture) {
+            KWARN("event_on_debug_event no texture! using default");
+            applicationState->testGeometry->material->diffuseMap.texture = texture_system_get_default_texture();
+        }
+    }
+    // Release the old texture
+    texture_system_release(oldName);
+    
+    return true;
+}
+//TODO: End Temp
 
 b8 application_create(Game* gameInstance){
     if(gameInstance->applicationState){
@@ -143,6 +183,27 @@ b8 application_create(Game* gameInstance){
         return false;
     }
 
+    // Geometry system.
+    GeometrySystemConfig geometry_sys_config;
+    geometry_sys_config.maxGeometryCount = 4096;
+    geometry_system_initialize(&applicationState->geometrySystemMemoryReqs, 0, geometry_sys_config);
+    applicationState->geomoetrySystemState = linear_allocator_allocate(&applicationState->systemsAllocator, applicationState->geometrySystemMemoryReqs);
+    if (!geometry_system_initialize(&applicationState->geometrySystemMemoryReqs, applicationState->geomoetrySystemState, geometry_sys_config)) {
+        KFATAL("Failed to initialize Geometry system. Application cannot continue.");
+        return false;
+    }
+    // TODO: Temp
+    GeometryConfig g_config = geometry_system_generate_plane_config(10.0f, 10.0f, 5, 5, 2.0f, 2.0f, "test geometry", "test_material");
+    applicationState->testGeometry = geometry_system_acquire_from_config(g_config, true);
+
+    // Clean up the allocations for the geometry config.
+    kfree(g_config.vertices, sizeof(Vertex3D) * g_config.vertexCount, MEMORY_TAG_ARRAY);
+    kfree(g_config.indices, sizeof(u32) * g_config.indexCount, MEMORY_TAG_ARRAY);
+    
+    // Load default Geometry
+    // applicationState->testGeometry = geometry_system_get_default();
+    // TODO: End Temp
+
     
 
     // Event Registration 
@@ -150,7 +211,9 @@ b8 application_create(Game* gameInstance){
     event_register(EVENT_CODE_KEY_PRESSED, 0, application_on_key);
     event_register(EVENT_CODE_KEY_RELEASED, 0, application_on_key);
     event_register(EVENT_CODE_RESIZED ,0,application_on_resize);
-
+    // TODO: Temp
+    event_register(EVENT_CODE_DEBUG0,0,event_on_debug_event);
+    // TODO: End Temp
     // Initialize the Game
     if(!applicationState->gameInstance->initialize(applicationState->gameInstance)){
         KFATAL("Failed to initialize game");
@@ -198,9 +261,19 @@ b8 application_run(){
                 applicationState->isRunning = false;
                 break;
             }
-            // TODO: Replace with something better
+            // TODO: Refactor Packet creation
             RenderPacket packet;
             packet.deltaTime = deltaTime;
+            // TODO: Temp
+            GeometryRenderData testRender;
+            testRender.geometry = applicationState->testGeometry;
+            testRender.model = mat4_identity();
+            packet.geometryCount = 1;
+            packet.geometries = &testRender;
+
+            // TODO: End Temp
+
+
             renderer_draw_frame(&packet);
 
             f64 frameEndTime = platform_get_absolute_time();
@@ -226,8 +299,13 @@ b8 application_run(){
      event_unregister(EVENT_CODE_APPLICATION_QUIT, 0, application_on_event);
     event_unregister(EVENT_CODE_KEY_PRESSED, 0, application_on_key);
     event_unregister(EVENT_CODE_KEY_RELEASED, 0, application_on_key);
+    // TODO: Temp
+    event_unregister(EVENT_CODE_DEBUG0,0,event_on_debug_event);
+    // TODO: End Temp
     
     input_system_shutdown(applicationState->inputSystemState);
+
+    geometry_system_shutdown(applicationState->geomoetrySystemState);
     material_system_shutdown(applicationState->materialSystemState);
     texture_system_shutdown(applicationState->textureSystemState);
     renderer_shutdown();

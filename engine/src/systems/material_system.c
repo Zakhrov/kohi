@@ -370,4 +370,10 @@ b8 load_configuration_file(const char* path, MaterialConfig* config){
     return true;
 
  }
-
+Material* material_system_get_default(){
+    if(statePtr){
+        return &statePtr->defaultMaterial;
+    }
+    KFATAL("material_system_get_default called before system is initialized.");
+    return 0;
+}

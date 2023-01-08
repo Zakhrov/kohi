@@ -26,6 +26,9 @@ b8 renderer_create_material(Material* material);
 
 void renderer_destroy_material(Material* material);
 
+b8 renderer_create_geometry(Geometry* geometry,u32 vertexCount,const Vertex3D* vertices, u32 indexCount,const u32* indices);
+void renderer_destroy_geometry(Geometry* geometry);
+
 
 #ifdef __cplusplus
 }

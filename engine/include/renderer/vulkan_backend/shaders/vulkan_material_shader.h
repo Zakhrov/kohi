@@ -10,7 +10,8 @@ void vulkan_material_shader_use(VulkanContext* context, VulkanMaterialShader* sh
 
 void vulkan_material_shader_update_global_state(VulkanContext* context, VulkanMaterialShader* shader, f64 deltaTime, int deviceIndex);
 
-void vulkan_material_shader_update_object(VulkanContext* context, VulkanMaterialShader* shader,GeometryRenderData data,int deviceIndex);
+void vulkan_material_shader_set_model(VulkanContext* context, VulkanMaterialShader* shader, mat4 model, int deviceIndex);
+void vulkan_material_shader_apply_material(VulkanContext* context, VulkanMaterialShader* shader, Material* material, int deviceIndex);
 
 b8 vulkan_material_shader_acquire_resources(VulkanContext* context, VulkanMaterialShader* shader, Material* material, int deviceIndex);
 void vulkan_material_shader_release_resources(VulkanContext* context, VulkanMaterialShader* shader, Material* material, int deviceIndex);
