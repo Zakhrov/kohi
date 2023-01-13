@@ -4,13 +4,13 @@ find_package(Vulkan COMPONENTS glslc glslangValidator)
 find_program(Vulkan_GLSLC_EXECUTABLE NAMES glslc HINTS Vulkan::glslc)
 find_program(Vulkan_GLSL_VALIDATOR NAMES glslangValidator HINTS Vulkan::glslangValidator)
 file(GLOB_RECURSE GLSL_FRAG_SHADER_FILES
-    "shaders/*.frag.glsl"
+    "shaders/*.frag"
     
     
     )
 
 file(GLOB_RECURSE GLSL_VERT_SHADER_FILES
-    "shaders/*.vert.glsl"
+    "shaders/*.vert"
     )
 
 file(GLOB_RECURSE TEXTURE_FILES "textures/*.png")

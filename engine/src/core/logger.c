@@ -17,9 +17,9 @@ void append_to_log_file(const char* message) {
         // Since the message already contains a '\n', just write the bytes directly.
         u64 length = strlen(message);
         u64 written = 0;
-        if (!filesystem_write(&statePtr->logFileHandle, length, message, &written)) {
-            platform_console_write_error("ERROR writing to console.log.", LOG_LEVEL_ERROR);
-        }
+        // if (!filesystem_write(&statePtr->logFileHandle, length, message, &written)) {
+        //     platform_console_write_error("ERROR writing to console.log.", LOG_LEVEL_ERROR);
+        // }
     }
 }
 
@@ -82,8 +82,11 @@ void log_output(LogLevel level, const char* message, ...){
         platform_console_write(out_message, level);
     }
 
+    char log_message[32000];
+    kzero_memory(log_message, sizeof(log_message));
+    string_ncopy(log_message,out_message,32000);
      // Queue a copy to be written to the log file.
-    append_to_log_file(out_message);
+    append_to_log_file(log_message);
 
 }
 void report_assertion_failure(const char* expression, const char* message, const char* file, i32 line) {

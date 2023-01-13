@@ -14,6 +14,7 @@
 #include "systems/texture_system.h"
 #include "systems/material_system.h"
 #include "systems/geometry_system.h"
+#include "systems/resource_system.h"
 
 //TODO: Begin Temp code
 #include "math/kmath.h"
@@ -55,7 +56,9 @@ typedef struct ApplicationState{
     void* materialSystemState;
 
     u64 geometrySystemMemoryReqs;
-    void* geomoetrySystemState;
+    void* geometrySystemState;
+    u64 resourceSystemMemoryReqs;
+    void* resourceSystemState;
 
     //TODO: Temp
     Geometry* testGeometry;
@@ -154,6 +157,17 @@ b8 application_create(Game* gameInstance){
     gameInstance->applicationConfig.startWidth,
     gameInstance->applicationConfig.startHeight);
 
+    // Resource System
+    ResourceSystemConfig resource_sys_config;
+    resource_sys_config.assetBasePath = "../assets";
+    resource_sys_config.maxLoaderCount = 32;
+    resource_system_initialize(&applicationState->resourceSystemMemoryReqs,0,resource_sys_config);
+    applicationState->resourceSystemState = linear_allocator_allocate(&applicationState->systemsAllocator,applicationState->resourceSystemMemoryReqs);
+    if(!resource_system_initialize(&applicationState->resourceSystemMemoryReqs,&applicationState->resourceSystemState,resource_sys_config)){
+        KFATAL("Failed to initialize renderer");
+        return false;
+    }
+
     //Renderer System
     renderer_system_initialize(&applicationState->rendererSystemMemoryReqs,0,0,0);
     applicationState->rendererSystemState = linear_allocator_allocate(&applicationState->systemsAllocator,applicationState->rendererSystemMemoryReqs);
@@ -187,8 +201,8 @@ b8 application_create(Game* gameInstance){
     GeometrySystemConfig geometry_sys_config;
     geometry_sys_config.maxGeometryCount = 4096;
     geometry_system_initialize(&applicationState->geometrySystemMemoryReqs, 0, geometry_sys_config);
-    applicationState->geomoetrySystemState = linear_allocator_allocate(&applicationState->systemsAllocator, applicationState->geometrySystemMemoryReqs);
-    if (!geometry_system_initialize(&applicationState->geometrySystemMemoryReqs, applicationState->geomoetrySystemState, geometry_sys_config)) {
+    applicationState->geometrySystemState = linear_allocator_allocate(&applicationState->systemsAllocator, applicationState->geometrySystemMemoryReqs);
+    if (!geometry_system_initialize(&applicationState->geometrySystemMemoryReqs, applicationState->geometrySystemState, geometry_sys_config)) {
         KFATAL("Failed to initialize Geometry system. Application cannot continue.");
         return false;
     }
@@ -305,10 +319,11 @@ b8 application_run(){
     
     input_system_shutdown(applicationState->inputSystemState);
 
-    geometry_system_shutdown(applicationState->geomoetrySystemState);
+    geometry_system_shutdown(applicationState->geometrySystemState);
     material_system_shutdown(applicationState->materialSystemState);
     texture_system_shutdown(applicationState->textureSystemState);
     renderer_shutdown();
+    resource_system_shutdown(applicationState->resourceSystemState);
     platform_system_shutdown(&applicationState->platformSystemState);
     memory_system_shutdown(applicationState->memorySystemState);
     

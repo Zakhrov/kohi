@@ -43,6 +43,15 @@ KAPI b8 filesystem_open(const char* path, FileModes mode, b8 binary, FileHandle*
  */
 KAPI void filesystem_close(FileHandle* handle);
 
+/**
+ * @brief Attempts to read the size of the file to which handle is attached.
+ * 
+ * @param handle The file handle.
+ * @param out_size A pointer to hold the file size.
+ * @return KAPI 
+ */
+KAPI b8 filesystem_size(FileHandle* handle, u64* size);
+
 /** 
  * Reads up to a newline or EOF.
  * @param handle A pointer to a file_handle structure.
@@ -76,11 +85,21 @@ KAPI b8 filesystem_read(FileHandle* handle, u64 dataSize, void* outData, u64* ou
  * Reads up to data_size bytes of data into out_bytes_read. 
  * Allocates *out_bytes, which must be freed by the caller.
  * @param handle A pointer to a FileHandle structure.
- * @param out_bytes A pointer to a byte array which will be allocated and populated by this method.
+ * @param out_bytes A  byte array which will be allocated and populated by this method.
  * @param out_bytes_read A pointer to a number which will be populated with the number of bytes actually read from the file.
  * @returns True if successful; otherwise false.
  */
-KAPI b8 filesystem_read_all_bytes(FileHandle* handle, u8** outBytes, u64* outBytesRead);
+KAPI b8 filesystem_read_all_bytes(FileHandle* handle, u8* outBytes, u64* outBytesRead);
+
+/** 
+ * Reads up to data_size bytes of data into out_bytes_read. 
+ * Allocates *out_bytes, which must be freed by the caller.
+ * @param handle A pointer to a FileHandle structure.
+ * @param out_text A  char array which will be allocated and populated by this method.
+ * @param out_text_read A pointer to a number which will be populated with the number of bytes actually read from the file.
+ * @returns True if successful; otherwise false.
+ */
+KAPI b8 filesystem_read_all_text(FileHandle* handle, char* outText, u64* outBytesRead);
 
 /** 
  * Writes provided data to the file.

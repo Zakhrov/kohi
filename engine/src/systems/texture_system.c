@@ -4,10 +4,9 @@
 #include "memory/kmemory.h"
 #include "containers/hashtable.h"
 #include "renderer/renderer_frontend.h"
+#include "systems/resource_system.h"
 
-// TODO: Rsource Loader
-#define STB_IMAGE_IMPLEMENTATION
-#include "vendor/stb_image.h"
+
 
 
 typedef struct TextureSystemState{
@@ -267,37 +266,29 @@ void destroy_default_textures(TextureSystemState* state){
 
 
 b8 load_texture(const char* textureName,Texture* texture){
-    // TODO: Should be able to be located anywhere
-    char* formatStr = "../assets/textures/%s.%s";
-    const i32 requiredChannelCount = 4;
-    stbi_set_flip_vertically_on_load(true);
-    char fullFilePath[512];
-    // TODO: try different extensions
-    string_format(fullFilePath,formatStr,textureName,"png");
-
-    // Use a temporary local texture to load everything
+    Resource imageResource;
+    if(!resource_system_load(textureName,RESOURCE_TYPE_IMAGE,&imageResource)){
+        KERROR("Failed to load image resource for texture %s",textureName);
+        return false;
+    }
+    ImageResourceData* imageResourceData = imageResource.data;
     Texture tempTexture;
-    u8* data = stbi_load(fullFilePath,(i32*)&tempTexture.width,(i32*)&tempTexture.height,(i32*)&tempTexture.channelCount,requiredChannelCount);
-    tempTexture.channelCount = requiredChannelCount;
-
-    if(data){
-        u32 currentGeneration = texture->generation;
-        texture->generation = INVALID_ID;
-        u64 totalSize = tempTexture.width * tempTexture.height * requiredChannelCount;
-        // check for transparency
-        b32 hasTransparency = false;
-        for(u64 i=0; i < totalSize; i+=requiredChannelCount ){
-            u8 a = data[i + 3];
+    tempTexture.width = imageResourceData->width;
+    tempTexture.height = imageResourceData->height;
+    tempTexture.channelCount = imageResourceData->channelCount;
+    u32 currentGeneration = texture->generation;
+    texture->generation = INVALID_ID;
+    u64 totalSize = tempTexture.width * tempTexture.height * tempTexture.channelCount;
+    // check for transparency
+    b32 hasTransparency = false;
+    for(u64 i=0; i < totalSize; i+=tempTexture.channelCount ){
+            u8 a = imageResourceData->pixels[i + 3];
             if(a < 255){
                 hasTransparency = true;
                 break;
             }
         }
-        if(stbi_failure_reason()){
-            KWARN("load_texture() failed to load file  '%s' : '%s' ",fullFilePath,stbi_failure_reason());
-            stbi__err(0,0);
-            return false;
-        }
+        
 
         // Take a copy of the name.
         string_ncopy(tempTexture.name, textureName, TEXTURE_NAME_MAX_LENGTH);
@@ -305,7 +296,7 @@ b8 load_texture(const char* textureName,Texture* texture){
         tempTexture.hasTransparency = hasTransparency;
 
 
-        renderer_create_texture( data, &tempTexture);
+        renderer_create_texture( imageResourceData->pixels, &tempTexture);
         // Take a copy of the old texture
         Texture oldTexture = *texture;
         // Assign the temp texture to the pointer
@@ -322,18 +313,8 @@ b8 load_texture(const char* textureName,Texture* texture){
         }
 
         // clean up data
-        stbi_image_free(data);
+        resource_system_unload(&imageResource);
         return true;
-
-
-    }
-    else{
-        if(stbi_failure_reason()){
-            KWARN("load_texture() failed to load file  '%s' : '%s' ",fullFilePath,stbi_failure_reason());
-            stbi__err(0,0);
-        }
-        return false;
-    }
 }
 
 void destroy_texture(Texture* texture){
